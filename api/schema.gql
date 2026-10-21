@@ -1,0 +1,59 @@
+# ------------------------------------------------------
+# THIS FILE WAS AUTOMATICALLY GENERATED (DO NOT MODIFY)
+# ------------------------------------------------------
+
+type AuthPayload {
+  accessToken: String!
+  refreshToken: String!
+  user: User!
+}
+
+"""
+A date-time string at UTC, such as 2019-12-03T09:54:33Z, compliant with the date-time format.
+"""
+scalar DateTime
+
+input LoginInput {
+  email: String!
+  password: String!
+}
+
+type Mutation {
+  login(input: LoginInput!): AuthPayload!
+  logout(input: RefreshTokenInput!): Boolean!
+  logoutAll: Boolean!
+  refreshSession(input: RefreshTokenInput!): AuthPayload!
+  signup(input: SignupInput!): AuthPayload!
+}
+
+type Query {
+  me: User!
+}
+
+input RefreshTokenInput {
+  refreshToken: String!
+}
+
+input SignupInput {
+  displayName: String!
+  email: String!
+  password: String!
+  username: String!
+}
+
+type User {
+  bio: String!
+  createdAt: DateTime!
+  displayName: String!
+  email: String!
+  id: ID!
+  role: UserRole!
+  suspended: Boolean!
+  username: String!
+}
+
+enum UserRole {
+  ADMIN
+  MODERATOR
+  USER
+}
