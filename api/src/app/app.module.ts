@@ -10,6 +10,7 @@ import { CommonModule } from '../common/common.module.js';
 import { validate } from '../config/env.validation.js';
 import { formatGraphQLError } from '../config/graphql-error.formatter.js';
 import { AuthModule } from '../modules/auth/auth.module.js';
+import { TweetsModule } from '../modules/tweets/tweets.module.js';
 import { UsersModule } from '../modules/users/users.module.js';
 
 @Module({
@@ -31,6 +32,7 @@ import { UsersModule } from '../modules/users/users.module.js';
     CommonModule,
     UsersModule,
     AuthModule,
+    TweetsModule,
   ],
   controllers: [AppController],
   providers: [AppService],
