@@ -1,4 +1,12 @@
-import { Args, Mutation, Resolver } from '@nestjs/graphql';
+import {
+  Args,
+  ID,
+  Mutation,
+  Parent,
+  Query,
+  ResolveField,
+  Resolver,
+} from '@nestjs/graphql';
 import { CurrentUser } from '../../../common/decorators/current-user.decorator.js';
 import type { User } from '../../users/domain/user.entity.js';
 import { TweetsService } from '../application/tweets.service.js';
@@ -20,5 +28,16 @@ export class TweetsResolver {
       content: input.content,
       parentId: input.parentId,
     });
+  }
+
+  @Query(() => TweetType)
+  tweet(@Args('id', { type: () => ID }) id: string): Promise<Tweet> {
+    return this.tweetsService.findById(id);
+  }
+
+  // Campo calculado: só é buscado quando o cliente pede `replies` na query.
+  @ResolveField(() => [TweetType])
+  replies(@Parent() tweet: Tweet): Promise<Tweet[]> {
+    return this.tweetsService.findReplies(tweet.id);
   }
 }

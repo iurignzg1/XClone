@@ -22,6 +22,19 @@ class InMemoryTweetRepository extends TweetRepository {
   findById(id: string): Promise<Tweet | null> {
     return Promise.resolve(this.tweets.find((t) => t.id === id) ?? null);
   }
+
+  addLikes(id: string, delta: number): Promise<Tweet | null> {
+    const tweet = this.tweets.find((t) => t.id === id);
+    if (!tweet || tweet.likesCount + delta < 0) return Promise.resolve(null);
+    tweet.likesCount += delta;
+    return Promise.resolve(tweet);
+  }
+
+  findReplies(parentId: string, limit: number): Promise<Tweet[]> {
+    return Promise.resolve(
+      this.tweets.filter((t) => t.parentId === parentId).slice(0, limit),
+    );
+  }
 }
 
 describe('TweetsService', () => {
@@ -63,6 +76,41 @@ describe('TweetsService', () => {
         }),
       ).rejects.toBeInstanceOf(NotFoundException);
       expect(repository.tweets).toHaveLength(0);
+    });
+  });
+
+  describe('findById', () => {
+    it('devolve o tweet quando ele existe', async () => {
+      const created = await service.create({ authorId: 'u1', content: 'olá' });
+
+      await expect(service.findById(created.id)).resolves.toEqual(created);
+    });
+
+    it('lança NotFound quando o tweet não existe', async () => {
+      await expect(service.findById('nao-existe')).rejects.toBeInstanceOf(
+        NotFoundException,
+      );
+    });
+  });
+
+  describe('findReplies', () => {
+    it('devolve só as respostas do tweet informado', async () => {
+      const a = await service.create({ authorId: 'u1', content: 'a' });
+      const b = await service.create({ authorId: 'u1', content: 'b' });
+      const replyToA = await service.create({
+        authorId: 'u2',
+        content: 'resposta a A',
+        parentId: a.id,
+      });
+      await service.create({
+        authorId: 'u2',
+        content: 'resposta a B',
+        parentId: b.id,
+      });
+
+      const replies = await service.findReplies(a.id);
+
+      expect(replies).toEqual([replyToA]);
     });
   });
 });

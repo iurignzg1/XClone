@@ -15,5 +15,6 @@ import { TweetsResolver } from './presentation/tweets.resolver.js';
     TweetsResolver,
     { provide: TweetRepository, useClass: MongoTweetRepository },
   ],
+  exports: [TweetsService],
 })
 export class TweetsModule {}

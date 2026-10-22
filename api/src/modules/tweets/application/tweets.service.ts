@@ -2,6 +2,8 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import type { Tweet } from '../domain/tweet.entity.js';
 import { TweetRepository } from '../domain/tweet.repository.js';
 
+const REPLIES_LIMIT = 50;
+
 export interface CreateTweetData {
   authorId: string;
   content: string;
@@ -21,5 +23,21 @@ export class TweetsService {
       }
     }
     return this.tweetRepository.create(data);
+  }
+
+  async findById(id: string): Promise<Tweet> {
+    const tweet = await this.tweetRepository.findById(id);
+    if (!tweet) {
+      throw new NotFoundException('Tweet não encontrado');
+    }
+    return tweet;
+  }
+
+  findReplies(tweetId: string): Promise<Tweet[]> {
+    return this.tweetRepository.findReplies(tweetId, REPLIES_LIMIT);
+  }
+
+  addLikes(tweetId: string, delta: number): Promise<Tweet | null> {
+    return this.tweetRepository.addLikes(tweetId, delta);
   }
 }

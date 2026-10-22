@@ -32,5 +32,5 @@ export const TweetSchema = SchemaFactory.createForClass(TweetModel);
 
 // Feed e perfil: tweets de um autor, do mais recente para o mais antigo.
 TweetSchema.index({ authorId: 1, createdAt: -1 });
-// Respostas de um tweet.
-TweetSchema.index({ parentId: 1 });
+// Respostas de um tweet, já na ordem em que são listadas.
+TweetSchema.index({ parentId: 1, createdAt: 1 });
