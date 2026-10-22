@@ -8,10 +8,19 @@ type AuthPayload {
   user: User!
 }
 
+input CreateTweetInput {
+  content: String!
+  parentId: ID
+}
+
 """
 A date-time string at UTC, such as 2019-12-03T09:54:33Z, compliant with the date-time format.
 """
 scalar DateTime
+
+input FollowUserInput {
+  userId: ID!
+}
 
 input LoginInput {
   email: String!
@@ -19,15 +28,20 @@ input LoginInput {
 }
 
 type Mutation {
+  createTweet(input: CreateTweetInput!): Tweet!
+  followUser(input: FollowUserInput!): Boolean!
   login(input: LoginInput!): AuthPayload!
   logout(input: RefreshTokenInput!): Boolean!
   logoutAll: Boolean!
   refreshSession(input: RefreshTokenInput!): AuthPayload!
   signup(input: SignupInput!): AuthPayload!
+  toggleLike(input: ToggleLikeInput!): ToggleLikePayload!
+  unfollowUser(input: FollowUserInput!): Boolean!
 }
 
 type Query {
   me: User!
+  tweet(id: ID!): Tweet!
 }
 
 input RefreshTokenInput {
@@ -39,6 +53,25 @@ input SignupInput {
   email: String!
   password: String!
   username: String!
+}
+
+input ToggleLikeInput {
+  tweetId: ID!
+}
+
+type ToggleLikePayload {
+  liked: Boolean!
+  likesCount: Int!
+}
+
+type Tweet {
+  authorId: ID!
+  content: String!
+  createdAt: DateTime!
+  id: ID!
+  likesCount: Int!
+  parentId: ID
+  replies: [Tweet!]!
 }
 
 type User {
