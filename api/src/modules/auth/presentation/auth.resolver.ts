@@ -40,12 +40,12 @@ export class AuthResolver {
     return this.authService.refreshSession(input.refreshToken, userAgent);
   }
 
+  // Público: encerra a sessão só com o refresh token, mesmo que o access
+  // token já tenha vencido.
+  @Public()
   @Mutation(() => Boolean)
-  async logout(
-    @CurrentUser() user: User,
-    @Args('input') input: RefreshTokenInput,
-  ): Promise<boolean> {
-    await this.authService.logout(user.id, input.refreshToken);
+  async logout(@Args('input') input: RefreshTokenInput): Promise<boolean> {
+    await this.authService.logout(input.refreshToken);
     return true;
   }
 

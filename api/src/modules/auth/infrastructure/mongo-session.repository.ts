@@ -47,6 +47,7 @@ export class MongoSessionRepository extends SessionRepository {
       expiresAt: doc.expiresAt,
       revokedAt: doc.revokedAt,
       userAgent: doc.userAgent,
+      loginAt: doc.loginAt,
     };
   }
 }

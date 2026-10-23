@@ -24,16 +24,31 @@ export class TokenService {
 
   // O refresh token é opaco (aleatório, não é JWT). No banco fica só o hash,
   // então um vazamento do banco não entrega tokens utilizáveis.
-  generateRefreshToken(): RefreshToken {
+  // `loginAt` é quando a sessão começou (o login original, mesmo depois de
+  // várias renovações). O prazo é o menor entre:
+  // - agora + REFRESH_TOKEN_TTL_SECONDS (7 dias): quem usa o app continua
+  //   logado, e quem fica 7 dias sem usar precisa entrar de novo;
+  // - loginAt + SESSION_MAX_LIFETIME_SECONDS (30 dias): nem renovando sempre a
+  //   sessão dura para sempre (ex.: token roubado de um aparelho esquecido).
+  generateRefreshToken(loginAt: Date): RefreshToken {
     const token = randomBytes(48).toString('base64url');
-    const ttlSeconds = this.config.getOrThrow('REFRESH_TOKEN_TTL_SECONDS', {
-      infer: true,
-    });
     return {
       token,
       tokenHash: this.hashRefreshToken(token),
-      expiresAt: new Date(Date.now() + ttlSeconds * 1000),
+      expiresAt: this.expirationFor(loginAt),
     };
+  }
+
+  private expirationFor(loginAt: Date): Date {
+    const slidingSeconds = this.config.getOrThrow('REFRESH_TOKEN_TTL_SECONDS', {
+      infer: true,
+    });
+    const maxSeconds = this.config.getOrThrow('SESSION_MAX_LIFETIME_SECONDS', {
+      infer: true,
+    });
+    const sliding = Date.now() + slidingSeconds * 1000;
+    const ceiling = loginAt.getTime() + maxSeconds * 1000;
+    return new Date(Math.min(sliding, ceiling));
   }
 
   // SHA-256 (determinístico) porque precisamos buscar a sessão pelo hash.

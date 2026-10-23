@@ -40,10 +40,15 @@ export class EnvironmentVariables {
   @Min(1)
   ACCESS_TOKEN_TTL_SECONDS: number = 15 * 60;
 
-  // 7 dias
+  // 7 dias: cada renovação estende a sessão por este prazo (janela deslizante)
   @IsInt()
   @Min(1)
   REFRESH_TOKEN_TTL_SECONDS: number = 7 * 24 * 60 * 60;
+
+  // 30 dias: teto da sessão desde o login, mesmo que ela seja renovada sempre
+  @IsInt()
+  @Min(1)
+  SESSION_MAX_LIFETIME_SECONDS: number = 30 * 24 * 60 * 60;
 }
 
 export function validate(

@@ -109,6 +109,15 @@ const signupData = {
   displayName: 'Iuri',
 };
 
+const DAY = 24 * 60 * 60 * 1000;
+const SEVEN_DAYS = 7 * DAY;
+const THIRTY_DAYS = 30 * DAY;
+
+// Diferença em ms entre a data e "agora + offset" (os testes rodam em ms, então
+// uma folga de alguns segundos basta).
+const distanceFrom = (date: Date, offset: number) =>
+  Math.abs(date.getTime() - (Date.now() + offset));
+
 describe('AuthService', () => {
   let users: InMemoryUserRepository;
   let sessions: InMemorySessionRepository;
@@ -117,7 +126,10 @@ describe('AuthService', () => {
   beforeEach(() => {
     users = new InMemoryUserRepository();
     sessions = new InMemorySessionRepository();
-    const config = new ConfigService({ REFRESH_TOKEN_TTL_SECONDS: 604800 });
+    const config = new ConfigService({
+      REFRESH_TOKEN_TTL_SECONDS: SEVEN_DAYS / 1000,
+      SESSION_MAX_LIFETIME_SECONDS: THIRTY_DAYS / 1000,
+    });
     const jwt = new JwtService({
       secret: 'x'.repeat(32),
       signOptions: { expiresIn: 900 },
@@ -197,6 +209,54 @@ describe('AuthService', () => {
   });
 
   describe('refreshSession', () => {
+    it('o login abre a sessão por 7 dias', async () => {
+      await service.signup(signupData, 'jest');
+
+      expect(
+        distanceFrom(sessions.sessions[0].expiresAt, SEVEN_DAYS),
+      ).toBeLessThan(5000);
+    });
+
+    it('cada renovação dá mais 7 dias a partir de agora (janela deslizante)', async () => {
+      const first = await service.signup(signupData, 'jest');
+      // Simula uma sessão aberta há 6 dias, que venceria amanhã.
+      sessions.sessions[0].loginAt = new Date(Date.now() - 6 * DAY);
+      sessions.sessions[0].expiresAt = new Date(Date.now() + DAY);
+
+      await service.refreshSession(first.refreshToken, 'jest');
+
+      expect(
+        distanceFrom(sessions.sessions[1].expiresAt, SEVEN_DAYS),
+      ).toBeLessThan(5000);
+    });
+
+    it('nunca passa do teto de 30 dias desde o login', async () => {
+      const first = await service.signup(signupData, 'jest');
+      // Simula um login de 29 dias atrás: só resta 1 dia até o teto.
+      const loginAt = new Date(Date.now() - 29 * DAY);
+      sessions.sessions[0].loginAt = loginAt;
+
+      await service.refreshSession(first.refreshToken, 'jest');
+
+      expect(sessions.sessions[1].expiresAt).toEqual(
+        new Date(loginAt.getTime() + THIRTY_DAYS),
+      );
+    });
+
+    it('a data do login passa adiante em cada renovação', async () => {
+      const first = await service.signup(signupData, 'jest');
+      const loginAt = sessions.sessions[0].loginAt;
+
+      const second = await service.refreshSession(first.refreshToken, 'jest');
+      await service.refreshSession(second.refreshToken, 'jest');
+
+      expect(sessions.sessions.map((s) => s.loginAt)).toEqual([
+        loginAt,
+        loginAt,
+        loginAt,
+      ]);
+    });
+
     it('troca o par de tokens e invalida o refresh token anterior', async () => {
       const first = await service.signup(signupData, 'jest');
 
@@ -271,18 +331,24 @@ describe('AuthService', () => {
       const a = await service.signup(signupData, 'jest');
       await service.login(signupData.email, signupData.password, 'celular');
 
-      await service.logout('user-1', a.refreshToken);
+      await service.logout(a.refreshToken);
 
       expect(sessions.sessions[0].revokedAt).not.toBeNull();
       expect(sessions.sessions[1].revokedAt).toBeNull();
     });
 
-    it('ignora token de outro usuário', async () => {
+    it('depois do logout, o refresh token não renova mais', async () => {
       const a = await service.signup(signupData, 'jest');
 
-      await service.logout('outro-usuario', a.refreshToken);
+      await service.logout(a.refreshToken);
 
-      expect(sessions.sessions[0].revokedAt).toBeNull();
+      await expect(
+        service.refreshSession(a.refreshToken, 'jest'),
+      ).rejects.toBeInstanceOf(UnauthorizedException);
+    });
+
+    it('token desconhecido não dá erro', async () => {
+      await expect(service.logout('token-inventado')).resolves.toBeUndefined();
     });
 
     it('logoutAll revoga todas as sessões do usuário', async () => {

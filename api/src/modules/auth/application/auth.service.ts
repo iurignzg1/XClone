@@ -113,15 +113,19 @@ export class AuthService {
     if (!user || user.suspended) {
       throw new UnauthorizedException('Sessão inválida');
     }
-    return this.startSession(user, userAgent);
+    // A sessão nova continua a mesma "cadeia" de login: leva o loginAt da
+    // anterior, para o teto contar desde o login original.
+    return this.startSession(user, userAgent, session.loginAt);
   }
 
-  // Idempotente: token desconhecido ou de outro usuário não gera erro.
-  async logout(userId: string, refreshToken: string): Promise<void> {
+  // Basta o refresh token: quem tem o token já pode usar a sessão, então pode
+  // encerrá-la, mesmo com o access token vencido. Idempotente: token
+  // desconhecido ou já revogado não gera erro.
+  async logout(refreshToken: string): Promise<void> {
     const session = await this.sessionRepository.findByTokenHash(
       this.tokenService.hashRefreshToken(refreshToken),
     );
-    if (session && session.userId === userId) {
+    if (session) {
       await this.sessionRepository.revoke(session.id);
     }
   }
@@ -130,16 +134,19 @@ export class AuthService {
     await this.sessionRepository.revokeAllByUser(userId);
   }
 
+  // loginAt: no signup e no login é agora; no refresh vem da sessão anterior.
   private async startSession(
     user: User,
     userAgent: string,
+    loginAt: Date = new Date(),
   ): Promise<AuthResult> {
-    const refresh = this.tokenService.generateRefreshToken();
+    const refresh = this.tokenService.generateRefreshToken(loginAt);
     await this.sessionRepository.create({
       userId: user.id,
       tokenHash: refresh.tokenHash,
       expiresAt: refresh.expiresAt,
       userAgent,
+      loginAt,
     });
     const accessToken = await this.tokenService.signAccessToken(user);
     return { accessToken, refreshToken: refresh.token, user };

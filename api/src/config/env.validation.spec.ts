@@ -18,6 +18,7 @@ describe('validate (.env)', () => {
     expect(env.PORT).toBe(3000);
     expect(env.ACCESS_TOKEN_TTL_SECONDS).toBe(900);
     expect(env.REFRESH_TOKEN_TTL_SECONDS).toBe(604800);
+    expect(env.SESSION_MAX_LIFETIME_SECONDS).toBe(2592000);
   });
 
   it('aceita a URI local do Mongo (mongodb://)', () => {

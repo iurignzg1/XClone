@@ -21,6 +21,9 @@ export class SessionModel {
   @Prop({ type: String, default: '' })
   userAgent: string;
 
+  @Prop({ type: Date, required: true })
+  loginAt: Date;
+
   createdAt: Date;
 }
 
