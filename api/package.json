@@ -71,5 +71,8 @@
     "ts-jest": "^29.4.15",
     "typescript": "^6.0.2",
     "typescript-eslint": "^8.72.0"
+  },
+  "overrides": {
+    "@graphql-tools/utils": "^12.1.0"
   }
 }
