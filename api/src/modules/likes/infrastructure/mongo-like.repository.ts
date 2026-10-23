@@ -45,4 +45,8 @@ export class MongoLikeRepository extends LikeRepository {
     const result = await this.likeModel.deleteOne({ userId, tweetId });
     return result.deletedCount === 1;
   }
+
+  async removeAllForTweet(tweetId: string): Promise<void> {
+    await this.likeModel.deleteMany({ tweetId });
+  }
 }

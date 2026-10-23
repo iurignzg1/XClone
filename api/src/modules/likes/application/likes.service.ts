@@ -1,6 +1,11 @@
 import { Injectable } from '@nestjs/common';
+import { OnEvent } from '@nestjs/event-emitter';
 import DataLoader from 'dataloader';
 import { TweetsService } from '../../tweets/application/tweets.service.js';
+import {
+  TWEET_DELETED,
+  type TweetDeletedEvent,
+} from '../../tweets/domain/tweet-deleted.event.js';
 import { UsersService } from '../../users/application/users.service.js';
 import type { User } from '../../users/domain/user.entity.js';
 import { LikeRepository } from '../domain/like.repository.js';
@@ -63,5 +68,11 @@ export class LikesService {
     // Outra requisição curtiu primeiro: o contador já foi atualizado por ela.
     const current = await this.tweetsService.findById(tweetId);
     return { liked: true, likesCount: current.likesCount };
+  }
+
+  // Tweet apagado: as curtidas dele não servem mais para nada.
+  @OnEvent(TWEET_DELETED)
+  async handleTweetDeleted(event: TweetDeletedEvent): Promise<void> {
+    await this.likeRepository.removeAllForTweet(event.tweetId);
   }
 }

@@ -1,5 +1,10 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
+import { EventEmitter2 } from '@nestjs/event-emitter';
 import { UsersService } from '../../users/application/users.service.js';
+import {
+  TWEET_DELETED,
+  type TweetDeletedEvent,
+} from '../domain/tweet-deleted.event.js';
 import type { Tweet } from '../domain/tweet.entity.js';
 import { TweetRepository } from '../domain/tweet.repository.js';
 
@@ -16,6 +21,7 @@ export class TweetsService {
   constructor(
     private readonly tweetRepository: TweetRepository,
     private readonly usersService: UsersService,
+    private readonly events: EventEmitter2,
   ) {}
 
   async create(data: CreateTweetData): Promise<Tweet> {
@@ -49,8 +55,15 @@ export class TweetsService {
   }
 
   // A autorização (autor ou moderador) é checada antes, pelo TweetOwnerGuard.
+  // Depois de apagar, anuncia o evento para os módulos que guardam dados do
+  // tweet (as curtidas) limparem a parte deles. O emitAsync espera essa limpeza
+  // terminar antes de a mutation responder.
   async delete(tweetId: string): Promise<void> {
-    await this.tweetRepository.deleteById(tweetId);
+    const deleted = await this.tweetRepository.deleteById(tweetId);
+    if (deleted) {
+      const event: TweetDeletedEvent = { tweetId };
+      await this.events.emitAsync(TWEET_DELETED, event);
+    }
   }
 
   findByAuthors(authorIds: string[], limit: number): Promise<Tweet[]> {

@@ -1,4 +1,5 @@
 import { NotFoundException } from '@nestjs/common';
+import { EventEmitter2 } from '@nestjs/event-emitter';
 import type { NewTweet, Tweet } from '../domain/tweet.entity.js';
 import { UsersService } from '../../users/application/users.service.js';
 import type { User } from '../../users/domain/user.entity.js';
@@ -68,10 +69,19 @@ const fakeUsersService = {
 describe('TweetsService', () => {
   let repository: InMemoryTweetRepository;
   let service: TweetsService;
+  let emitted: { name: string; payload: unknown }[];
 
   beforeEach(() => {
     repository = new InMemoryTweetRepository();
-    service = new TweetsService(repository, fakeUsersService);
+    emitted = [];
+    // Só o emitAsync do EventEmitter2, registrando o que foi anunciado.
+    const events = {
+      emitAsync: (name: string, payload: unknown) => {
+        emitted.push({ name, payload });
+        return Promise.resolve([]);
+      },
+    } as unknown as EventEmitter2;
+    service = new TweetsService(repository, fakeUsersService, events);
   });
 
   describe('create', () => {
@@ -155,6 +165,22 @@ describe('TweetsService', () => {
 
     it('apagar um tweet que não existe não dá erro', async () => {
       await expect(service.delete('nao-existe')).resolves.toBeUndefined();
+    });
+
+    it('anuncia o evento tweet.deleted depois de apagar', async () => {
+      const created = await service.create({ authorId: 'u1', content: 'olá' });
+
+      await service.delete(created.id);
+
+      expect(emitted).toEqual([
+        { name: 'tweet.deleted', payload: { tweetId: created.id } },
+      ]);
+    });
+
+    it('não anuncia nada quando o tweet não existia', async () => {
+      await service.delete('nao-existe');
+
+      expect(emitted).toEqual([]);
     });
   });
 

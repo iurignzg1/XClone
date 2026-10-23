@@ -20,6 +20,13 @@ class InMemoryLikeRepository extends LikeRepository {
     return Promise.resolve(this.likes.delete(`${userId}:${tweetId}`));
   }
 
+  removeAllForTweet(tweetId: string): Promise<void> {
+    for (const key of this.likes) {
+      if (key.endsWith(`:${tweetId}`)) this.likes.delete(key);
+    }
+    return Promise.resolve();
+  }
+
   // Ordem de inserção = ordem das curtidas (a mais recente é a última).
   findLikerIds(tweetId: string, limit: number): Promise<string[]> {
     return Promise.resolve(
@@ -215,6 +222,18 @@ describe('LikesService', () => {
       await expect(service.getLikers('nao-existe', 50)).rejects.toBeInstanceOf(
         NotFoundException,
       );
+    });
+  });
+
+  describe('handleTweetDeleted', () => {
+    it('apaga as curtidas do tweet apagado e só dele', async () => {
+      likes.likes.add('u1:t1');
+      likes.likes.add('u2:t1');
+      likes.likes.add('u1:t2');
+
+      await service.handleTweetDeleted({ tweetId: 't1' });
+
+      expect([...likes.likes]).toEqual(['u1:t2']);
     });
   });
 });

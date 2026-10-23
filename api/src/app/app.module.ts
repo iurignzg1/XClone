@@ -2,6 +2,7 @@ import { ApolloDriver, ApolloDriverConfig } from '@nestjs/apollo';
 import { Module, ValidationPipe } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { APP_PIPE } from '@nestjs/core';
+import { EventEmitterModule } from '@nestjs/event-emitter';
 import { GraphQLModule } from '@nestjs/graphql';
 import { MongooseModule } from '@nestjs/mongoose';
 import { join } from 'node:path';
@@ -24,6 +25,8 @@ import { UsersModule } from '../modules/users/users.module.js';
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true, validate }),
+    // Eventos entre módulos (ex.: tweet apagado → curtidas apagadas).
+    EventEmitterModule.forRoot(),
     MongooseModule.forRootAsync({
       inject: [ConfigService],
       useFactory: (configService: ConfigService) => ({
