@@ -1,5 +1,7 @@
 import { NotFoundException } from '@nestjs/common';
 import type { NewTweet, Tweet } from '../domain/tweet.entity.js';
+import { UsersService } from '../../users/application/users.service.js';
+import type { User } from '../../users/domain/user.entity.js';
 import { TweetRepository } from '../domain/tweet.repository.js';
 import { TweetsService } from './tweets.service.js';
 
@@ -55,13 +57,21 @@ class InMemoryTweetRepository extends TweetRepository {
   }
 }
 
+// Só o método do UsersService que o TweetsService usa: "iuri" existe e é o u1.
+const fakeUsersService = {
+  getByUsername: (username: string) =>
+    username === 'iuri'
+      ? Promise.resolve({ id: 'u1', username } as User)
+      : Promise.reject(new NotFoundException('Usuário não encontrado')),
+} as unknown as UsersService;
+
 describe('TweetsService', () => {
   let repository: InMemoryTweetRepository;
   let service: TweetsService;
 
   beforeEach(() => {
     repository = new InMemoryTweetRepository();
-    service = new TweetsService(repository);
+    service = new TweetsService(repository, fakeUsersService);
   });
 
   describe('create', () => {
@@ -145,6 +155,41 @@ describe('TweetsService', () => {
 
     it('apagar um tweet que não existe não dá erro', async () => {
       await expect(service.delete('nao-existe')).resolves.toBeUndefined();
+    });
+  });
+
+  describe('findByUsername', () => {
+    it('devolve só os tweets de topo do usuário, do mais novo para o mais antigo', async () => {
+      const primeiro = await service.create({ authorId: 'u1', content: '1' });
+      await service.create({ authorId: 'u2', content: 'de outra pessoa' });
+      const segundo = await service.create({ authorId: 'u1', content: '2' });
+      await service.create({
+        authorId: 'u1',
+        content: 'resposta',
+        parentId: primeiro.id,
+      });
+
+      const tweets = await service.findByUsername('iuri', 20);
+
+      expect(tweets.map((t) => t.content)).toEqual([
+        segundo.content,
+        primeiro.content,
+      ]);
+    });
+
+    it('respeita o limite', async () => {
+      await service.create({ authorId: 'u1', content: '1' });
+      await service.create({ authorId: 'u1', content: '2' });
+
+      const tweets = await service.findByUsername('iuri', 1);
+
+      expect(tweets.map((t) => t.content)).toEqual(['2']);
+    });
+
+    it('lança NotFound quando o usuário não existe', async () => {
+      await expect(
+        service.findByUsername('fantasma', 20),
+      ).rejects.toBeInstanceOf(NotFoundException);
     });
   });
 });

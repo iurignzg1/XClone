@@ -18,6 +18,7 @@ import { TweetsService } from '../application/tweets.service.js';
 import type { Tweet } from '../domain/tweet.entity.js';
 import { CreateTweetInput } from './dto/create-tweet.input.js';
 import { DeleteTweetInput } from './dto/delete-tweet.input.js';
+import { UserTweetsArgs } from './dto/user-tweets.args.js';
 import { TweetOwnerGuard } from './guards/tweet-owner.guard.js';
 import { TweetType } from './types/tweet.type.js';
 
@@ -55,6 +56,11 @@ export class TweetsResolver {
   @Query(() => TweetType)
   tweet(@Args('id', { type: () => ID }) id: string): Promise<Tweet> {
     return this.tweetsService.findById(id);
+  }
+
+  @Query(() => [TweetType])
+  userTweets(@Args() args: UserTweetsArgs): Promise<Tweet[]> {
+    return this.tweetsService.findByUsername(args.username, args.limit);
   }
 
   // Campo calculado: só é buscado quando o cliente pede `replies` na query.

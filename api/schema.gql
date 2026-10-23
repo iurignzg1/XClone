@@ -62,6 +62,7 @@ type Query {
   tweet(id: ID!): Tweet!
   tweetLikes(limit: Int! = 50, tweetId: ID!): [User!]!
   userByUsername(username: String!): User!
+  userTweets(limit: Int! = 20, username: String!): [Tweet!]!
 }
 
 input RefreshTokenInput {
@@ -104,6 +105,9 @@ type User {
   bio: String!
   createdAt: DateTime!
   displayName: String!
+  followedByMe: Boolean!
+  followersCount: Int!
+  followingCount: Int!
   id: ID!
   role: UserRole!
   suspended: Boolean!

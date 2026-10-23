@@ -1,4 +1,5 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
+import { UsersService } from '../../users/application/users.service.js';
 import type { Tweet } from '../domain/tweet.entity.js';
 import { TweetRepository } from '../domain/tweet.repository.js';
 
@@ -12,7 +13,10 @@ export interface CreateTweetData {
 
 @Injectable()
 export class TweetsService {
-  constructor(private readonly tweetRepository: TweetRepository) {}
+  constructor(
+    private readonly tweetRepository: TweetRepository,
+    private readonly usersService: UsersService,
+  ) {}
 
   async create(data: CreateTweetData): Promise<Tweet> {
     // Uma resposta só faz sentido se o tweet respondido existir.
@@ -31,6 +35,13 @@ export class TweetsService {
       throw new NotFoundException('Tweet não encontrado');
     }
     return tweet;
+  }
+
+  // Aba "Tweets" do perfil: só tweets de topo do usuário, do mais novo para o
+  // mais antigo (as respostas ficam no detalhe de cada tweet, como no feed).
+  async findByUsername(username: string, limit: number): Promise<Tweet[]> {
+    const user = await this.usersService.getByUsername(username);
+    return this.tweetRepository.findByAuthors([user.id], limit);
   }
 
   findReplies(tweetId: string): Promise<Tweet[]> {

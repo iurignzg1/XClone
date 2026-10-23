@@ -25,6 +25,36 @@ class InMemoryFollowRepository extends FollowRepository {
   remove(followerId: string, followingId: string): Promise<boolean> {
     return Promise.resolve(this.follows.delete(`${followerId}:${followingId}`));
   }
+
+  findFollowedIds(followerId: string, userIds: string[]): Promise<string[]> {
+    this.followedCalls.push(userIds);
+    return Promise.resolve(
+      userIds.filter((id) => this.follows.has(`${followerId}:${id}`)),
+    );
+  }
+
+  // Cada chamada fica registrada para os testes contarem as consultas.
+  followedCalls: string[][] = [];
+  countCalls: string[][] = [];
+
+  countFollowers(userIds: string[]): Promise<Map<string, number>> {
+    return this.countBy(1, userIds);
+  }
+
+  countFollowing(userIds: string[]): Promise<Map<string, number>> {
+    return this.countBy(0, userIds);
+  }
+
+  // position 0 = quem segue; 1 = quem é seguido.
+  private countBy(position: 0 | 1, userIds: string[]) {
+    this.countCalls.push(userIds);
+    const totals = new Map<string, number>();
+    for (const key of this.follows) {
+      const id = key.split(':')[position];
+      if (userIds.includes(id)) totals.set(id, (totals.get(id) ?? 0) + 1);
+    }
+    return Promise.resolve(totals);
+  }
 }
 
 // Só o método do UsersService que o FollowsService usa.
@@ -84,6 +114,69 @@ describe('FollowsService', () => {
       await expect(
         service.unfollow('eu', 'existente'),
       ).resolves.toBeUndefined();
+    });
+  });
+
+  describe('contadores', () => {
+    beforeEach(() => {
+      // ana segue bia e caio; bia segue caio.
+      repository.follows.add('ana:bia');
+      repository.follows.add('ana:caio');
+      repository.follows.add('bia:caio');
+    });
+
+    it('conta seguidores de cada usuário', async () => {
+      const loader = service.createFollowersCountLoader();
+
+      const totals = await Promise.all(
+        ['ana', 'bia', 'caio'].map((id) => loader.load(id)),
+      );
+
+      expect(totals).toEqual([0, 1, 2]);
+    });
+
+    it('conta quantas pessoas cada usuário segue', async () => {
+      const loader = service.createFollowingCountLoader();
+
+      const totals = await Promise.all(
+        ['ana', 'bia', 'caio'].map((id) => loader.load(id)),
+      );
+
+      expect(totals).toEqual([2, 1, 0]);
+    });
+
+    it('junta os contadores de vários usuários numa consulta só', async () => {
+      const loader = service.createFollowersCountLoader();
+
+      await Promise.all(['ana', 'bia', 'caio'].map((id) => loader.load(id)));
+
+      expect(repository.countCalls).toEqual([['ana', 'bia', 'caio']]);
+    });
+  });
+
+  describe('createFollowedByMeLoader', () => {
+    beforeEach(() => {
+      repository.follows.add('ana:bia');
+      repository.follows.add('caio:ana');
+    });
+
+    it('responde se quem está logado segue cada usuário', async () => {
+      const loader = service.createFollowedByMeLoader('ana');
+
+      const result = await Promise.all(
+        ['bia', 'caio', 'ana'].map((id) => loader.load(id)),
+      );
+
+      // ana segue bia; não segue caio (é caio quem segue ana); nem a si mesma.
+      expect(result).toEqual([true, false, false]);
+    });
+
+    it('junta as perguntas de vários usuários numa consulta só', async () => {
+      const loader = service.createFollowedByMeLoader('ana');
+
+      await Promise.all(['bia', 'caio'].map((id) => loader.load(id)));
+
+      expect(repository.followedCalls).toEqual([['bia', 'caio']]);
     });
   });
 });

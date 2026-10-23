@@ -1,9 +1,12 @@
 import { Field, ObjectType } from '@nestjs/graphql';
-import { UserType } from './user.type.js';
+import { BaseUserType } from './user.type.js';
 
-// O próprio usuário: o perfil público mais os dados privados dele (e-mail).
+// A conta do próprio usuário: os campos de cadastro mais os dados privados
+// (e-mail). Não herda do User de propósito: os campos calculados que outros
+// módulos acrescentam ao User (contadores, followedByMe) só têm resolver lá.
+// Os números do próprio perfil vêm de userByUsername.
 @ObjectType('Me')
-export class MeType extends UserType {
+export class MeType extends BaseUserType {
   @Field()
   email: string;
 }

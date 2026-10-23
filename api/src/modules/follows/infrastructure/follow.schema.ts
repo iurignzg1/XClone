@@ -22,3 +22,5 @@ export const FollowSchema = SchemaFactory.createForClass(FollowModel);
 
 // Seguir a mesma pessoa duas vezes não cria dois vínculos: o banco garante.
 FollowSchema.index({ followerId: 1, followingId: 1 }, { unique: true });
+// Seguidores de um usuário (o índice acima só serve para "quem ele segue").
+FollowSchema.index({ followingId: 1 });
