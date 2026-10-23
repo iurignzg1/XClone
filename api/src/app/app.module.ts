@@ -7,8 +7,12 @@ import { join } from 'node:path';
 import { AppController } from './app.controller.js';
 import { AppService } from './app.service.js';
 import { CommonModule } from '../common/common.module.js';
-import { validate } from '../config/env.validation.js';
-import { formatGraphQLError } from '../config/graphql-error.formatter.js';
+import {
+  Environment,
+  EnvironmentVariables,
+  validate,
+} from '../config/env.validation.js';
+import { createGraphQLErrorFormatter } from '../config/graphql-error.formatter.js';
 import { AuthModule } from '../modules/auth/auth.module.js';
 import { FeedModule } from '../modules/feed/feed.module.js';
 import { FollowsModule } from '../modules/follows/follows.module.js';
@@ -25,12 +29,19 @@ import { UsersModule } from '../modules/users/users.module.js';
         uri: configService.get<string>('MONGODB_URI', { infer: true }),
       }),
     }),
-    GraphQLModule.forRoot<ApolloDriverConfig>({
+    // Async para ler o NODE_ENV já validado e decidir como mostrar os erros.
+    GraphQLModule.forRootAsync<ApolloDriverConfig>({
       driver: ApolloDriver,
-      autoSchemaFile: join(process.cwd(), 'schema.gql'),
-      sortSchema: true,
-      formatError: formatGraphQLError,
-      context: ({ req }: { req: unknown }) => ({ req }),
+      inject: [ConfigService],
+      useFactory: (config: ConfigService<EnvironmentVariables, true>) => ({
+        autoSchemaFile: join(process.cwd(), 'schema.gql'),
+        sortSchema: true,
+        formatError: createGraphQLErrorFormatter({
+          exposeInternalErrors:
+            config.get('NODE_ENV', { infer: true }) !== Environment.Production,
+        }),
+        context: ({ req }: { req: unknown }) => ({ req }),
+      }),
     }),
     CommonModule,
     UsersModule,
