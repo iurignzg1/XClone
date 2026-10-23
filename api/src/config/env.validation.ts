@@ -49,6 +49,14 @@ export class EnvironmentVariables {
   @IsInt()
   @Min(1)
   SESSION_MAX_LIFETIME_SECONDS: number = 30 * 24 * 60 * 60;
+
+  // Endereço(s) do front que podem chamar a API pelo navegador (CORS),
+  // separados por vírgula. Padrão: o Vite em desenvolvimento.
+  @Matches(/^https?:\/\/[^\s,/]+(,https?:\/\/[^\s,/]+)*$/, {
+    message:
+      'CORS_ORIGIN deve ter uma ou mais origens separadas por vírgula, como http://localhost:5173 (sem caminho nem barra no fim)',
+  })
+  CORS_ORIGIN: string = 'http://localhost:5173';
 }
 
 export function validate(

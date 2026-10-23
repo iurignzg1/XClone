@@ -19,6 +19,22 @@ describe('validate (.env)', () => {
     expect(env.ACCESS_TOKEN_TTL_SECONDS).toBe(900);
     expect(env.REFRESH_TOKEN_TTL_SECONDS).toBe(604800);
     expect(env.SESSION_MAX_LIFETIME_SECONDS).toBe(2592000);
+    expect(env.CORS_ORIGIN).toBe('http://localhost:5173');
+  });
+
+  it('aceita várias origens do front, separadas por vírgula', () => {
+    const env = validate({
+      ...valid,
+      CORS_ORIGIN: 'http://localhost:5173,https://xclone.exemplo.com',
+    });
+
+    expect(env.CORS_ORIGIN.split(',')).toHaveLength(2);
+  });
+
+  it('recusa origem com caminho ou barra no fim', () => {
+    expect(() =>
+      validate({ ...valid, CORS_ORIGIN: 'http://localhost:5173/' }),
+    ).toThrow(/CORS_ORIGIN/);
   });
 
   it('aceita a URI local do Mongo (mongodb://)', () => {
