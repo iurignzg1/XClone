@@ -19,7 +19,8 @@
     "test:cov": "node --experimental-vm-modules node_modules/jest/bin/jest.js --coverage",
     "test:debug": "node --inspect-brk --experimental-vm-modules node_modules/jest/bin/jest.js --runInBand",
     "test:e2e": "node --experimental-vm-modules node_modules/jest/bin/jest.js --config ./test/jest-e2e.config.ts --runInBand",
-    "lint:check": "eslint \"{src,test}/**/*.ts\""
+    "lint:check": "eslint \"{src,test}/**/*.ts\"",
+    "typecheck": "tsc --noEmit"
   },
   "dependencies": {
     "@apollo/server": "^5.5.1",
