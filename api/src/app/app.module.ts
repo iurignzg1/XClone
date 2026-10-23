@@ -1,6 +1,7 @@
 import { ApolloDriver, ApolloDriverConfig } from '@nestjs/apollo';
-import { Module } from '@nestjs/common';
+import { Module, ValidationPipe } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
+import { APP_PIPE } from '@nestjs/core';
 import { GraphQLModule } from '@nestjs/graphql';
 import { MongooseModule } from '@nestjs/mongoose';
 import { join } from 'node:path';
@@ -52,6 +53,17 @@ import { UsersModule } from '../modules/users/users.module.js';
     FeedModule,
   ],
   controllers: [AppController],
-  providers: [AppService],
+  providers: [
+    AppService,
+    // Validação global de todo input e argumento (regras do class-validator).
+    // Registrada aqui, e não no main.ts, para valer também quando a API é
+    // montada pelos testes, que não passam pelo main.ts.
+    // whitelist: descarta campos sem regra; transform: cria a instância da
+    // classe (é o que faz o @Transform, como o trim do tweet, rodar).
+    {
+      provide: APP_PIPE,
+      useValue: new ValidationPipe({ whitelist: true, transform: true }),
+    },
+  ],
 })
 export class AppModule {}
