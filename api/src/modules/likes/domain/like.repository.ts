@@ -3,4 +3,11 @@ export abstract class LikeRepository {
   abstract add(userId: string, tweetId: string): Promise<boolean>;
   // Devolve true se a curtida foi removida agora, false se não existia.
   abstract remove(userId: string, tweetId: string): Promise<boolean>;
+  // Ids de quem curtiu o tweet, da curtida mais recente para a mais antiga.
+  abstract findLikerIds(tweetId: string, limit: number): Promise<string[]>;
+  // Entre os tweets informados, quais o usuário curtiu (uma consulta só).
+  abstract findLikedTweetIds(
+    userId: string,
+    tweetIds: string[],
+  ): Promise<string[]>;
 }

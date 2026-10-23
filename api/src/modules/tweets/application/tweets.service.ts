@@ -37,6 +37,15 @@ export class TweetsService {
     return this.tweetRepository.findReplies(tweetId, REPLIES_LIMIT);
   }
 
+  // A autorização (autor ou moderador) é checada antes, pelo TweetOwnerGuard.
+  async delete(tweetId: string): Promise<void> {
+    await this.tweetRepository.deleteById(tweetId);
+  }
+
+  findByAuthors(authorIds: string[], limit: number): Promise<Tweet[]> {
+    return this.tweetRepository.findByAuthors(authorIds, limit);
+  }
+
   addLikes(tweetId: string, delta: number): Promise<Tweet | null> {
     return this.tweetRepository.addLikes(tweetId, delta);
   }

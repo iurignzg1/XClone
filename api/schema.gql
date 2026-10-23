@@ -5,7 +5,7 @@
 type AuthPayload {
   accessToken: String!
   refreshToken: String!
-  user: User!
+  user: Me!
 }
 
 input CreateTweetInput {
@@ -18,6 +18,10 @@ A date-time string at UTC, such as 2019-12-03T09:54:33Z, compliant with the date
 """
 scalar DateTime
 
+input DeleteTweetInput {
+  tweetId: ID!
+}
+
 input FollowUserInput {
   userId: ID!
 }
@@ -27,21 +31,37 @@ input LoginInput {
   password: String!
 }
 
+type Me {
+  bio: String!
+  createdAt: DateTime!
+  displayName: String!
+  email: String!
+  id: ID!
+  role: UserRole!
+  suspended: Boolean!
+  username: String!
+}
+
 type Mutation {
   createTweet(input: CreateTweetInput!): Tweet!
+  deleteTweet(input: DeleteTweetInput!): Boolean!
   followUser(input: FollowUserInput!): Boolean!
   login(input: LoginInput!): AuthPayload!
   logout(input: RefreshTokenInput!): Boolean!
   logoutAll: Boolean!
   refreshSession(input: RefreshTokenInput!): AuthPayload!
   signup(input: SignupInput!): AuthPayload!
+  suspendUser(input: SuspendUserInput!): User!
   toggleLike(input: ToggleLikeInput!): ToggleLikePayload!
   unfollowUser(input: FollowUserInput!): Boolean!
 }
 
 type Query {
-  me: User!
+  feed(limit: Int! = 20): [Tweet!]!
+  me: Me!
   tweet(id: ID!): Tweet!
+  tweetLikes(limit: Int! = 50, tweetId: ID!): [User!]!
+  userByUsername(username: String!): User!
 }
 
 input RefreshTokenInput {
@@ -53,6 +73,10 @@ input SignupInput {
   email: String!
   password: String!
   username: String!
+}
+
+input SuspendUserInput {
+  userId: ID!
 }
 
 input ToggleLikeInput {
@@ -69,6 +93,7 @@ type Tweet {
   content: String!
   createdAt: DateTime!
   id: ID!
+  likedByMe: Boolean!
   likesCount: Int!
   parentId: ID
   replies: [Tweet!]!
@@ -78,7 +103,6 @@ type User {
   bio: String!
   createdAt: DateTime!
   displayName: String!
-  email: String!
   id: ID!
   role: UserRole!
   suspended: Boolean!

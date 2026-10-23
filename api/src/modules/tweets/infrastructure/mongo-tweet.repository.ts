@@ -35,6 +35,21 @@ export class MongoTweetRepository extends TweetRepository {
     return docs.map((doc) => this.toDomain(doc));
   }
 
+  async findByAuthors(authorIds: string[], limit: number): Promise<Tweet[]> {
+    // parentId: null filtra só tweets "de topo": respostas ficam no detalhe.
+    const docs = await this.tweetModel
+      .find({ authorId: { $in: authorIds }, parentId: null })
+      .sort({ createdAt: -1 })
+      .limit(limit);
+    return docs.map((doc) => this.toDomain(doc));
+  }
+
+  async deleteById(id: string): Promise<boolean> {
+    if (!isValidObjectId(id)) return false;
+    const result = await this.tweetModel.deleteOne({ _id: id });
+    return result.deletedCount === 1;
+  }
+
   async addLikes(id: string, delta: number): Promise<Tweet | null> {
     if (!isValidObjectId(id)) return null;
     // Ao descontar, só atualiza se o contador comporta (nunca fica negativo).

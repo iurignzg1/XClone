@@ -47,6 +47,14 @@ class InMemoryUserRepository extends UserRepository {
   findByEmail(email: string) {
     return Promise.resolve(this.users.find((u) => u.email === email) ?? null);
   }
+  setSuspended(id: string, suspended: boolean) {
+    const user = this.users.find((u) => u.id === id);
+    if (user) user.suspended = suspended;
+    return Promise.resolve(user ?? null);
+  }
+  findByIds(ids: string[]) {
+    return Promise.resolve(this.users.filter((u) => ids.includes(u.id)));
+  }
   findByUsername(username: string) {
     return Promise.resolve(
       this.users.find((u) => u.username === username) ?? null,

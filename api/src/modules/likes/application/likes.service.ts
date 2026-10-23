@@ -1,5 +1,8 @@
 import { Injectable } from '@nestjs/common';
+import DataLoader from 'dataloader';
 import { TweetsService } from '../../tweets/application/tweets.service.js';
+import { UsersService } from '../../users/application/users.service.js';
+import type { User } from '../../users/domain/user.entity.js';
 import { LikeRepository } from '../domain/like.repository.js';
 
 export interface ToggleLikeResult {
@@ -12,7 +15,29 @@ export class LikesService {
   constructor(
     private readonly likeRepository: LikeRepository,
     private readonly tweetsService: TweetsService,
+    private readonly usersService: UsersService,
   ) {}
+
+  // Quem curtiu o tweet, da curtida mais recente para a mais antiga.
+  async getLikers(tweetId: string, limit: number): Promise<User[]> {
+    await this.tweetsService.findById(tweetId);
+    const userIds = await this.likeRepository.findLikerIds(tweetId, limit);
+    const users = await this.usersService.findByIds(userIds);
+    // O banco devolve os usuários em qualquer ordem: refaz a ordem das curtidas.
+    const byId = new Map(users.map((user) => [user.id, user]));
+    return userIds.flatMap((id) => byId.get(id) ?? []);
+  }
+
+  // Um loader por requisição: junta todos os `likedByMe` pedidos na mesma
+  // resposta numa única consulta, em vez de uma consulta por tweet (N+1).
+  createLikedByMeLoader(userId: string): DataLoader<string, boolean> {
+    return new DataLoader<string, boolean>(async (tweetIds) => {
+      const liked = new Set(
+        await this.likeRepository.findLikedTweetIds(userId, [...tweetIds]),
+      );
+      return tweetIds.map((id) => liked.has(id));
+    });
+  }
 
   // Curte se ainda não curtiu; descurte se já curtiu. O contador só muda quando
   // a curtida realmente foi criada ou removida, então duas requisições

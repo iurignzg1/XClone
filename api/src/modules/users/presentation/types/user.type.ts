@@ -3,7 +3,8 @@ import { UserRole } from '../../domain/user-role.enum.js';
 
 registerEnumType(UserRole, { name: 'UserRole' });
 
-// Só expõe o que é seguro: passwordHash não é um @Field, então nunca sai na API.
+// Perfil público: o que qualquer usuário logado pode ver de outro. Sem e-mail.
+// O passwordHash não é um @Field, então nunca sai na API.
 @ObjectType('User')
 export class UserType {
   @Field(() => ID)
@@ -11,9 +12,6 @@ export class UserType {
 
   @Field()
   username: string;
-
-  @Field()
-  email: string;
 
   @Field()
   displayName: string;

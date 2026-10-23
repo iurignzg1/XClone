@@ -23,6 +23,13 @@ export class MongoFollowRepository extends FollowRepository {
     return result.upsertedCount === 1;
   }
 
+  async findFollowingIds(followerId: string): Promise<string[]> {
+    const docs = await this.followModel
+      .find({ followerId })
+      .select('followingId');
+    return docs.map((doc) => doc.followingId.toString());
+  }
+
   async remove(followerId: string, followingId: string): Promise<boolean> {
     const result = await this.followModel.deleteOne({
       followerId,

@@ -23,6 +23,21 @@ class InMemoryTweetRepository extends TweetRepository {
     return Promise.resolve(this.tweets.find((t) => t.id === id) ?? null);
   }
 
+  deleteById(id: string): Promise<boolean> {
+    const before = this.tweets.length;
+    this.tweets = this.tweets.filter((t) => t.id !== id);
+    return Promise.resolve(this.tweets.length < before);
+  }
+
+  findByAuthors(authorIds: string[], limit: number): Promise<Tweet[]> {
+    return Promise.resolve(
+      this.tweets
+        .filter((t) => authorIds.includes(t.authorId) && t.parentId === null)
+        .reverse()
+        .slice(0, limit),
+    );
+  }
+
   addLikes(id: string, delta: number): Promise<Tweet | null> {
     const tweet = this.tweets.find((t) => t.id === id);
     if (!tweet || tweet.likesCount + delta < 0) return Promise.resolve(null);
@@ -111,6 +126,22 @@ describe('TweetsService', () => {
       const replies = await service.findReplies(a.id);
 
       expect(replies).toEqual([replyToA]);
+    });
+  });
+
+  describe('delete', () => {
+    it('apaga o tweet', async () => {
+      const created = await service.create({ authorId: 'u1', content: 'olá' });
+
+      await service.delete(created.id);
+
+      await expect(service.findById(created.id)).rejects.toBeInstanceOf(
+        NotFoundException,
+      );
+    });
+
+    it('apagar um tweet que não existe não dá erro', async () => {
+      await expect(service.delete('nao-existe')).resolves.toBeUndefined();
     });
   });
 });

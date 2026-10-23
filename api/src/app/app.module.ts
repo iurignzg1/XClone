@@ -10,6 +10,7 @@ import { CommonModule } from '../common/common.module.js';
 import { validate } from '../config/env.validation.js';
 import { formatGraphQLError } from '../config/graphql-error.formatter.js';
 import { AuthModule } from '../modules/auth/auth.module.js';
+import { FeedModule } from '../modules/feed/feed.module.js';
 import { FollowsModule } from '../modules/follows/follows.module.js';
 import { LikesModule } from '../modules/likes/likes.module.js';
 import { TweetsModule } from '../modules/tweets/tweets.module.js';
@@ -37,6 +38,7 @@ import { UsersModule } from '../modules/users/users.module.js';
     TweetsModule,
     LikesModule,
     FollowsModule,
+    FeedModule,
   ],
   controllers: [AppController],
   providers: [AppService],

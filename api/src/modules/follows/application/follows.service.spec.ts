@@ -14,6 +14,14 @@ class InMemoryFollowRepository extends FollowRepository {
     return Promise.resolve(isNew);
   }
 
+  findFollowingIds(followerId: string): Promise<string[]> {
+    return Promise.resolve(
+      [...this.follows]
+        .filter((key) => key.startsWith(`${followerId}:`))
+        .map((key) => key.split(':')[1]),
+    );
+  }
+
   remove(followerId: string, followingId: string): Promise<boolean> {
     return Promise.resolve(this.follows.delete(`${followerId}:${followingId}`));
   }

@@ -22,6 +22,25 @@ export class MongoLikeRepository extends LikeRepository {
     return result.upsertedCount === 1;
   }
 
+  async findLikerIds(tweetId: string, limit: number): Promise<string[]> {
+    const docs = await this.likeModel
+      .find({ tweetId })
+      .sort({ createdAt: -1 })
+      .limit(limit)
+      .select('userId');
+    return docs.map((doc) => doc.userId.toString());
+  }
+
+  async findLikedTweetIds(
+    userId: string,
+    tweetIds: string[],
+  ): Promise<string[]> {
+    const docs = await this.likeModel
+      .find({ userId, tweetId: { $in: tweetIds } })
+      .select('tweetId');
+    return docs.map((doc) => doc.tweetId.toString());
+  }
+
   async remove(userId: string, tweetId: string): Promise<boolean> {
     const result = await this.likeModel.deleteOne({ userId, tweetId });
     return result.deletedCount === 1;

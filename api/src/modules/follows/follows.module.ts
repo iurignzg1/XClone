@@ -19,5 +19,6 @@ import { FollowsResolver } from './presentation/follows.resolver.js';
     FollowsResolver,
     { provide: FollowRepository, useClass: MongoFollowRepository },
   ],
+  exports: [FollowsService],
 })
 export class FollowsModule {}

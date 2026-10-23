@@ -20,5 +20,5 @@ export const LikeSchema = SchemaFactory.createForClass(LikeModel);
 
 // Um usuário só pode curtir um tweet uma vez: o banco garante.
 LikeSchema.index({ userId: 1, tweetId: 1 }, { unique: true });
-// Quem curtiu um tweet.
-LikeSchema.index({ tweetId: 1 });
+// Quem curtiu um tweet, já na ordem em que é listado (mais recentes primeiro).
+LikeSchema.index({ tweetId: 1, createdAt: -1 });

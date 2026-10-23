@@ -25,6 +25,10 @@ export class FollowsService {
     await this.followRepository.add(followerId, targetUserId);
   }
 
+  getFollowingIds(userId: string): Promise<string[]> {
+    return this.followRepository.findFollowingIds(userId);
+  }
+
   // Idempotente: deixar de seguir quem não se segue também não dá erro.
   async unfollow(followerId: string, targetUserId: string): Promise<void> {
     await this.followRepository.remove(followerId, targetUserId);

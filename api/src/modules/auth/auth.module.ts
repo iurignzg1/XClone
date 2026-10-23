@@ -4,6 +4,7 @@ import { APP_GUARD } from '@nestjs/core';
 import { JwtModule } from '@nestjs/jwt';
 import { MongooseModule } from '@nestjs/mongoose';
 import { PassportModule } from '@nestjs/passport';
+import { RolesGuard } from '../../common/guards/roles.guard.js';
 import type { EnvironmentVariables } from '../../config/env.validation.js';
 import { UsersModule } from '../users/users.module.js';
 import { AuthService } from './application/auth.service.js';
@@ -46,7 +47,9 @@ import { GqlAuthGuard } from './presentation/guards/gql-auth.guard.js';
     JwtStrategy,
     { provide: SessionRepository, useClass: MongoSessionRepository },
     { provide: PasswordHasher, useClass: Argon2PasswordHasher },
+    // A ordem importa: primeiro autentica, depois confere o papel.
     { provide: APP_GUARD, useClass: GqlAuthGuard },
+    { provide: APP_GUARD, useClass: RolesGuard },
   ],
 })
 export class AuthModule {}

@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { Model } from 'mongoose';
+import { isValidObjectId, Model } from 'mongoose';
 import { UserConflictError } from '../domain/user-conflict.error.js';
 import type { NewUser, User } from '../domain/user.entity.js';
 import { UserRepository } from '../domain/user.repository.js';
@@ -37,6 +37,21 @@ export class MongoUserRepository extends UserRepository {
     const doc = await this.userModel.findOne({
       username: username.toLowerCase(),
     });
+    return doc && this.toDomain(doc);
+  }
+
+  async findByIds(ids: string[]): Promise<User[]> {
+    const docs = await this.userModel.find({ _id: { $in: ids } });
+    return docs.map((doc) => this.toDomain(doc));
+  }
+
+  async setSuspended(id: string, suspended: boolean): Promise<User | null> {
+    if (!isValidObjectId(id)) return null;
+    const doc = await this.userModel.findByIdAndUpdate(
+      id,
+      { suspended },
+      { new: true },
+    );
     return doc && this.toDomain(doc);
   }
 
