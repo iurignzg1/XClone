@@ -6,7 +6,7 @@ export abstract class TweetRepository {
   // Devolve true se o tweet existia e foi apagado.
   abstract deleteById(id: string): Promise<boolean>;
   // Soma `delta` ao contador de curtidas (atômico, com $inc). Devolve o tweet
-  // atualizado, ou null se ele não existe ou se o contador ficaria negativo.
+  // atualizado (contador nunca menor que 0 na leitura), ou null se ele não existe.
   abstract addLikes(id: string, delta: number): Promise<Tweet | null>;
   // Tweets (sem respostas) de vários autores, do mais novo para o mais antigo.
   abstract findByAuthors(authorIds: string[], limit: number): Promise<Tweet[]>;

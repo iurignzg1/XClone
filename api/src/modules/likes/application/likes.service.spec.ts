@@ -49,12 +49,15 @@ function fakeTweetsService(tweet: Tweet) {
       id === tweet.id
         ? Promise.resolve(tweet)
         : Promise.reject(new NotFoundException('Tweet não encontrado')),
+    // Mesma semântica do repositório real: soma sem trava e, na leitura,
+    // nunca devolve contador negativo.
     addLikes: (id: string, delta: number) => {
-      if (id !== tweet.id || tweet.likesCount + delta < 0) {
-        return Promise.resolve(null);
-      }
+      if (id !== tweet.id) return Promise.resolve(null);
       tweet.likesCount += delta;
-      return Promise.resolve(tweet);
+      return Promise.resolve({
+        ...tweet,
+        likesCount: Math.max(0, tweet.likesCount),
+      });
     },
   } as unknown as TweetsService;
 }
@@ -118,6 +121,28 @@ describe('LikesService', () => {
     const result = await service.toggle('u1', 't1');
 
     expect(result).toEqual({ liked: true, likesCount: 1 });
+  });
+
+  it('duplo clique simultâneo do mesmo usuário não desajusta o contador', async () => {
+    // Reproduz a ordem que quebrava a versão anterior: a 1ª requisição grava a
+    // curtida e, antes de somar 1, a 2ª remove essa curtida e desconta 1.
+    let release!: () => void;
+    const gate = new Promise<void>((resolve) => (release = resolve));
+    const realAdd = likes.add.bind(likes);
+    likes.add = async (userId: string, tweetId: string) => {
+      const created = await realAdd(userId, tweetId);
+      await gate;
+      return created;
+    };
+
+    const first = service.toggle('u1', 't1');
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    await service.toggle('u1', 't1');
+    release();
+    await first;
+
+    expect(likes.likes.size).toBe(0);
+    expect(tweet.likesCount).toBe(0);
   });
 
   it('recusa curtir um tweet que não existe', async () => {

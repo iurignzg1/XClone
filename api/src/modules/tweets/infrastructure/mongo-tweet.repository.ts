@@ -52,11 +52,12 @@ export class MongoTweetRepository extends TweetRepository {
 
   async addLikes(id: string, delta: number): Promise<Tweet | null> {
     if (!isValidObjectId(id)) return null;
-    // Ao descontar, só atualiza se o contador comporta (nunca fica negativo).
-    const filter =
-      delta < 0 ? { _id: id, likesCount: { $gte: -delta } } : { _id: id };
+    // Sem trava de "nunca negativo": cada curtida criada soma 1 e cada curtida
+    // removida desconta 1, então o total sempre fecha, mesmo quando o -1 chega
+    // antes do +1 (duplo clique). Uma trava aqui descartaria esse -1 e deixaria
+    // o contador errado para sempre.
     const doc = await this.tweetModel.findOneAndUpdate(
-      filter,
+      { _id: id },
       { $inc: { likesCount: delta } },
       { new: true },
     );
@@ -69,7 +70,9 @@ export class MongoTweetRepository extends TweetRepository {
       content: doc.content,
       authorId: doc.authorId.toString(),
       parentId: doc.parentId?.toString() ?? null,
-      likesCount: doc.likesCount,
+      // Entre um -1 e um +1 que chegaram fora de ordem, o valor gravado pode
+      // ficar em -1 por um instante; quem lê nunca vê negativo.
+      likesCount: Math.max(0, doc.likesCount),
       createdAt: doc.createdAt,
     };
   }

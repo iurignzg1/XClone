@@ -40,9 +40,12 @@ class InMemoryTweetRepository extends TweetRepository {
 
   addLikes(id: string, delta: number): Promise<Tweet | null> {
     const tweet = this.tweets.find((t) => t.id === id);
-    if (!tweet || tweet.likesCount + delta < 0) return Promise.resolve(null);
+    if (!tweet) return Promise.resolve(null);
     tweet.likesCount += delta;
-    return Promise.resolve(tweet);
+    return Promise.resolve({
+      ...tweet,
+      likesCount: Math.max(0, tweet.likesCount),
+    });
   }
 
   findReplies(parentId: string, limit: number): Promise<Tweet[]> {
