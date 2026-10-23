@@ -35,7 +35,10 @@ class InMemoryUserRepository extends UserRepository {
     if (user) user.suspended = suspended;
     return Promise.resolve(user ?? null);
   }
+  // Cada chamada fica registrada para os testes contarem as consultas.
+  findByIdsCalls: string[][] = [];
   findByIds(ids: string[]) {
+    this.findByIdsCalls.push(ids);
     return Promise.resolve(this.users.filter((u) => ids.includes(u.id)));
   }
 }
@@ -94,6 +97,49 @@ describe('UsersService', () => {
 
     it('lança NotFound quando o usuário não existe', async () => {
       await expect(service.suspend('admin', 'fantasma')).rejects.toBeInstanceOf(
+        NotFoundException,
+      );
+    });
+  });
+
+  describe('createByIdLoader', () => {
+    beforeEach(async () => {
+      await service.create({
+        username: 'maria',
+        email: 'maria@example.com',
+        passwordHash: 'hash',
+        displayName: 'Maria',
+      });
+    });
+
+    it('junta várias buscas numa consulta só e devolve na ordem pedida', async () => {
+      const loader = service.createByIdLoader();
+
+      const users = await Promise.all([
+        loader.load('user-2'),
+        loader.load('user-1'),
+        loader.load('user-2'),
+      ]);
+
+      expect(users.map((user) => user.username)).toEqual([
+        'maria',
+        'iuri',
+        'maria',
+      ]);
+      expect(repository.findByIdsCalls).toEqual([['user-2', 'user-1']]);
+    });
+
+    it('rejeita um id que não existe, sem afetar os outros', async () => {
+      const loader = service.createByIdLoader();
+
+      const [found, missing] = await Promise.allSettled([
+        loader.load('user-1'),
+        loader.load('fantasma'),
+      ]);
+
+      expect(found.status).toBe('fulfilled');
+      expect(missing.status).toBe('rejected');
+      expect((missing as PromiseRejectedResult).reason).toBeInstanceOf(
         NotFoundException,
       );
     });

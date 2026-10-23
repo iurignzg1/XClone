@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
+import { UsersModule } from '../users/users.module.js';
 import { TweetsService } from './application/tweets.service.js';
 import { TweetRepository } from './domain/tweet.repository.js';
 import { MongoTweetRepository } from './infrastructure/mongo-tweet.repository.js';
@@ -8,6 +9,7 @@ import { TweetsResolver } from './presentation/tweets.resolver.js';
 
 @Module({
   imports: [
+    UsersModule,
     MongooseModule.forFeature([{ name: TweetModel.name, schema: TweetSchema }]),
   ],
   providers: [

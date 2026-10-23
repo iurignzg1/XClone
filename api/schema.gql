@@ -89,6 +89,7 @@ type ToggleLikePayload {
 }
 
 type Tweet {
+  author: User!
   authorId: ID!
   content: String!
   createdAt: DateTime!

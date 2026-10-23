@@ -3,6 +3,7 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
+import DataLoader from 'dataloader';
 import type { NewUser, User } from '../domain/user.entity.js';
 import { UserRepository } from '../domain/user.repository.js';
 
@@ -49,5 +50,18 @@ export class UsersService {
 
   findByIds(ids: string[]): Promise<User[]> {
     return this.userRepository.findByIds(ids);
+  }
+
+  // Um loader por requisição: junta as buscas de usuário por id feitas na
+  // mesma resposta (ex.: o autor de cada tweet do feed) numa única consulta.
+  createByIdLoader(): DataLoader<string, User> {
+    return new DataLoader<string, User>(async (ids) => {
+      const users = await this.userRepository.findByIds([...ids]);
+      const byId = new Map(users.map((user) => [user.id, user]));
+      // O DataLoader exige uma resposta por id, na mesma ordem dos ids.
+      return ids.map(
+        (id) => byId.get(id) ?? new NotFoundException('Usuário não encontrado'),
+      );
+    });
   }
 }
