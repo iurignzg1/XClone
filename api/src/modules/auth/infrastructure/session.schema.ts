@@ -1,7 +1,10 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { HydratedDocument, Schema as MongooseSchema, Types } from 'mongoose';
 
-@Schema({ collection: 'sessions' })
+@Schema({
+  collection: 'sessions',
+  timestamps: { createdAt: true, updatedAt: false },
+})
 export class SessionModel {
   @Prop({ type: MongooseSchema.Types.ObjectId, required: true, index: true })
   userId: Types.ObjectId;
@@ -17,6 +20,8 @@ export class SessionModel {
 
   @Prop({ type: String, default: '' })
   userAgent: string;
+
+  createdAt: Date;
 }
 
 export type SessionDocument = HydratedDocument<SessionModel>;

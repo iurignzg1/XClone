@@ -3,6 +3,7 @@ import {
   IsEnum,
   IsInt,
   IsString,
+  Matches,
   Max,
   Min,
   MinLength,
@@ -25,6 +26,9 @@ export class EnvironmentVariables {
   PORT!: number;
 
   @IsString()
+  @Matches(/^mongodb(\+srv)?:\/\/\S+$/, {
+    message: 'MONGODB_URI deve começar com mongodb:// ou mongodb+srv://',
+  })
   MONGODB_URI!: string;
 
   @IsString()
@@ -50,7 +54,12 @@ export function validate(
   });
   const errors = validateSync(validated);
   if (errors.length > 0) {
-    throw new Error(errors.toString());
+    // As mensagens de cada regra (ex.: "PORT must not be greater than 65535"),
+    // em vez do toString(), que só lista os nomes das regras quebradas.
+    const messages = errors.flatMap((error) =>
+      Object.values(error.constraints ?? {}),
+    );
+    throw new Error(`.env inválido: ${messages.join('; ')}`);
   }
   return validated;
 }

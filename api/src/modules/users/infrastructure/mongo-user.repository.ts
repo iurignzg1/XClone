@@ -24,6 +24,8 @@ export class MongoUserRepository extends UserRepository {
   }
 
   async findById(id: string): Promise<User | null> {
+    // Um id mal formado não é erro do sistema: simplesmente não existe.
+    if (!isValidObjectId(id)) return null;
     const doc = await this.userModel.findById(id);
     return doc && this.toDomain(doc);
   }
@@ -41,7 +43,9 @@ export class MongoUserRepository extends UserRepository {
   }
 
   async findByIds(ids: string[]): Promise<User[]> {
-    const docs = await this.userModel.find({ _id: { $in: ids } });
+    const docs = await this.userModel.find({
+      _id: { $in: ids.filter((id) => isValidObjectId(id)) },
+    });
     return docs.map((doc) => this.toDomain(doc));
   }
 
