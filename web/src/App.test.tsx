@@ -161,6 +161,22 @@ describe('App', () => {
     expect(screen.getByRole('alert')).toHaveTextContent(/npm run start/);
   });
 
+  it('mostra a logo preta para o tema claro e a branca para o escuro', () => {
+    render(
+      <MockedProvider mocks={[]}>
+        <App />
+      </MockedProvider>,
+    );
+
+    const logos = screen.getAllByAltText('XClone');
+
+    // O CSS escolhe qual das duas aparece; aqui conferimos que as duas existem.
+    expect(logos.map((logo) => logo.getAttribute('src'))).toEqual([
+      '/logo-preta.svg',
+      '/logo-branca.svg',
+    ]);
+  });
+
   it('não oferece "seguir autor" nos próprios tweets', async () => {
     loginAs();
     render(

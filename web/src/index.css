@@ -9,9 +9,13 @@
   font: 16px/1.5 system-ui, 'Segoe UI', Roboto, sans-serif;
   color-scheme: light dark;
 }
+/* Tema: sem escolha do usuário, vale o do sistema (prefers-color-scheme); com
+   escolha, o atributo data-theme na página (ver features/ui/ui.store.ts) manda. */
 @media (prefers-color-scheme: dark) {
-  :root { --bg: #14141a; --surface: #1d1d26; --ink: #ececf2; --muted: #a0a0b0; --line: #2d2d3a; --accent: #6aa5ff; --error: #ff8a80; }
+  :root:not([data-theme='light']) { --bg: #14141a; --surface: #1d1d26; --ink: #ececf2; --muted: #a0a0b0; --line: #2d2d3a; --accent: #6aa5ff; --error: #ff8a80; color-scheme: dark; }
 }
+:root[data-theme='dark'] { --bg: #14141a; --surface: #1d1d26; --ink: #ececf2; --muted: #a0a0b0; --line: #2d2d3a; --accent: #6aa5ff; --error: #ff8a80; color-scheme: dark; }
+:root[data-theme='light'] { color-scheme: light; }
 * { box-sizing: border-box; }
 body { margin: 0; background: var(--bg); color: var(--ink); }
 /* As margens respeitam as áreas seguras de celulares com notch (viewport-fit=cover). */
@@ -21,6 +25,19 @@ main {
     calc(64px + env(safe-area-inset-bottom, 0px)) max(16px, env(safe-area-inset-left, 0px));
 }
 h1, h2, h3 { margin: 0; line-height: 1.2; }
+.brand { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.brand-title { flex: 1 1 0; min-width: 0; }
+.brand h1 { font-size: 1.6rem; }
+.brand-title p { margin: 0; }
+.logo { width: 44px; height: 44px; flex: none; }
+.logo-dark-theme { display: none; }
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) .logo-light-theme { display: none; }
+  :root:not([data-theme='light']) .logo-dark-theme { display: block; }
+}
+:root[data-theme='dark'] .logo-light-theme { display: none; }
+:root[data-theme='dark'] .logo-dark-theme { display: block; }
+.theme-toggle { flex: none; white-space: nowrap; }
 h2 { font-size: 1.25rem; display: flex; gap: 12px; align-items: center; }
 /* O botão dentro do título ("Atualizar") herdaria o tamanho do título. */
 h2 button { font-size: 1rem; font-weight: 400; }
