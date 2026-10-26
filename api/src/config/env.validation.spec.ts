@@ -19,7 +19,10 @@ describe('validate (.env)', () => {
     expect(env.ACCESS_TOKEN_TTL_SECONDS).toBe(900);
     expect(env.REFRESH_TOKEN_TTL_SECONDS).toBe(604800);
     expect(env.SESSION_MAX_LIFETIME_SECONDS).toBe(2592000);
-    expect(env.CORS_ORIGIN).toBe('http://localhost:5173');
+    expect(env.CORS_ORIGIN.split(',')).toEqual([
+      'http://localhost:5173',
+      'http://127.0.0.1:5173',
+    ]);
   });
 
   it('aceita várias origens do front, separadas por vírgula', () => {
