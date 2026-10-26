@@ -1,0 +1,31 @@
+mutation Signup($input: SignupInput!) {
+  signup(input: $input) {
+    accessToken
+    refreshToken
+    user { id username displayName email role }
+  }
+}
+
+mutation Login($input: LoginInput!) {
+  login(input: $input) {
+    accessToken
+    refreshToken
+    user { id username displayName email role }
+  }
+}
+
+mutation RefreshSession($input: RefreshTokenInput!) {
+  refreshSession(input: $input) {
+    accessToken
+    refreshToken
+    user { id username displayName email role }
+  }
+}
+
+mutation Logout($input: RefreshTokenInput!) {
+  logout(input: $input)
+}
+
+mutation LogoutAll {
+  logoutAll
+}

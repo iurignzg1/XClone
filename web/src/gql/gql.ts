@@ -1,0 +1,58 @@
+/* eslint-disable */
+import * as types from './graphql';
+import type { TypedDocumentNode as DocumentNode } from '@graphql-typed-document-node/core';
+
+/**
+ * Map of all GraphQL operations in the project.
+ *
+ * This map has several performance disadvantages:
+ * 1. It is not tree-shakeable, so it will include all operations in the project.
+ * 2. It is not minifiable, so the string of a GraphQL query will be multiple times inside the bundle.
+ * 3. It does not support dead code elimination, so it will add unused operations.
+ *
+ * Therefore it is highly recommended to use the babel or swc plugin for production.
+ * Learn more about it here: https://the-guild.dev/graphql/codegen/plugins/presets/preset-client#reducing-bundle-size
+ */
+type Documents = {
+    "mutation Signup($input: SignupInput!) {\n  signup(input: $input) {\n    accessToken\n    refreshToken\n    user {\n      id\n      username\n      displayName\n      email\n      role\n    }\n  }\n}\n\nmutation Login($input: LoginInput!) {\n  login(input: $input) {\n    accessToken\n    refreshToken\n    user {\n      id\n      username\n      displayName\n      email\n      role\n    }\n  }\n}\n\nmutation RefreshSession($input: RefreshTokenInput!) {\n  refreshSession(input: $input) {\n    accessToken\n    refreshToken\n    user {\n      id\n      username\n      displayName\n      email\n      role\n    }\n  }\n}\n\nmutation Logout($input: RefreshTokenInput!) {\n  logout(input: $input)\n}\n\nmutation LogoutAll {\n  logoutAll\n}": typeof types.SignupDocument,
+    "query UserByUsername($username: String!) {\n  userByUsername(username: $username) {\n    id\n    username\n    displayName\n    bio\n    role\n    suspended\n    followersCount\n    followingCount\n    followedByMe\n  }\n}\n\nquery UserTweets($username: String!, $limit: Int) {\n  userTweets(username: $username, limit: $limit) {\n    ...TweetCard\n  }\n}\n\nmutation FollowUser($input: FollowUserInput!) {\n  followUser(input: $input)\n}\n\nmutation UnfollowUser($input: FollowUserInput!) {\n  unfollowUser(input: $input)\n}\n\nmutation SuspendUser($input: SuspendUserInput!) {\n  suspendUser(input: $input) {\n    id\n    suspended\n  }\n}": typeof types.UserByUsernameDocument,
+    "fragment TweetCard on Tweet {\n  id\n  content\n  createdAt\n  parentId\n  likesCount\n  likedByMe\n  author {\n    id\n    username\n    displayName\n  }\n}\n\nquery Feed($limit: Int) {\n  feed(limit: $limit) {\n    ...TweetCard\n  }\n}\n\nmutation CreateTweet($input: CreateTweetInput!) {\n  createTweet(input: $input) {\n    ...TweetCard\n  }\n}\n\nmutation DeleteTweet($input: DeleteTweetInput!) {\n  deleteTweet(input: $input)\n}\n\nmutation ToggleLike($input: ToggleLikeInput!) {\n  toggleLike(input: $input) {\n    liked\n    likesCount\n  }\n}\n\nquery TweetLikes($tweetId: ID!) {\n  tweetLikes(tweetId: $tweetId) {\n    id\n    username\n    displayName\n    followedByMe\n  }\n}": typeof types.TweetCardFragmentDoc,
+};
+const documents: Documents = {
+    "mutation Signup($input: SignupInput!) {\n  signup(input: $input) {\n    accessToken\n    refreshToken\n    user {\n      id\n      username\n      displayName\n      email\n      role\n    }\n  }\n}\n\nmutation Login($input: LoginInput!) {\n  login(input: $input) {\n    accessToken\n    refreshToken\n    user {\n      id\n      username\n      displayName\n      email\n      role\n    }\n  }\n}\n\nmutation RefreshSession($input: RefreshTokenInput!) {\n  refreshSession(input: $input) {\n    accessToken\n    refreshToken\n    user {\n      id\n      username\n      displayName\n      email\n      role\n    }\n  }\n}\n\nmutation Logout($input: RefreshTokenInput!) {\n  logout(input: $input)\n}\n\nmutation LogoutAll {\n  logoutAll\n}": types.SignupDocument,
+    "query UserByUsername($username: String!) {\n  userByUsername(username: $username) {\n    id\n    username\n    displayName\n    bio\n    role\n    suspended\n    followersCount\n    followingCount\n    followedByMe\n  }\n}\n\nquery UserTweets($username: String!, $limit: Int) {\n  userTweets(username: $username, limit: $limit) {\n    ...TweetCard\n  }\n}\n\nmutation FollowUser($input: FollowUserInput!) {\n  followUser(input: $input)\n}\n\nmutation UnfollowUser($input: FollowUserInput!) {\n  unfollowUser(input: $input)\n}\n\nmutation SuspendUser($input: SuspendUserInput!) {\n  suspendUser(input: $input) {\n    id\n    suspended\n  }\n}": types.UserByUsernameDocument,
+    "fragment TweetCard on Tweet {\n  id\n  content\n  createdAt\n  parentId\n  likesCount\n  likedByMe\n  author {\n    id\n    username\n    displayName\n  }\n}\n\nquery Feed($limit: Int) {\n  feed(limit: $limit) {\n    ...TweetCard\n  }\n}\n\nmutation CreateTweet($input: CreateTweetInput!) {\n  createTweet(input: $input) {\n    ...TweetCard\n  }\n}\n\nmutation DeleteTweet($input: DeleteTweetInput!) {\n  deleteTweet(input: $input)\n}\n\nmutation ToggleLike($input: ToggleLikeInput!) {\n  toggleLike(input: $input) {\n    liked\n    likesCount\n  }\n}\n\nquery TweetLikes($tweetId: ID!) {\n  tweetLikes(tweetId: $tweetId) {\n    id\n    username\n    displayName\n    followedByMe\n  }\n}": types.TweetCardFragmentDoc,
+};
+
+/**
+ * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ *
+ *
+ * @example
+ * ```ts
+ * const query = graphql(`query GetUser($id: ID!) { user(id: $id) { name } }`);
+ * ```
+ *
+ * The query argument is unknown!
+ * Please regenerate the types.
+ */
+export function graphql(source: string): unknown;
+
+/**
+ * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function graphql(source: "mutation Signup($input: SignupInput!) {\n  signup(input: $input) {\n    accessToken\n    refreshToken\n    user {\n      id\n      username\n      displayName\n      email\n      role\n    }\n  }\n}\n\nmutation Login($input: LoginInput!) {\n  login(input: $input) {\n    accessToken\n    refreshToken\n    user {\n      id\n      username\n      displayName\n      email\n      role\n    }\n  }\n}\n\nmutation RefreshSession($input: RefreshTokenInput!) {\n  refreshSession(input: $input) {\n    accessToken\n    refreshToken\n    user {\n      id\n      username\n      displayName\n      email\n      role\n    }\n  }\n}\n\nmutation Logout($input: RefreshTokenInput!) {\n  logout(input: $input)\n}\n\nmutation LogoutAll {\n  logoutAll\n}"): (typeof documents)["mutation Signup($input: SignupInput!) {\n  signup(input: $input) {\n    accessToken\n    refreshToken\n    user {\n      id\n      username\n      displayName\n      email\n      role\n    }\n  }\n}\n\nmutation Login($input: LoginInput!) {\n  login(input: $input) {\n    accessToken\n    refreshToken\n    user {\n      id\n      username\n      displayName\n      email\n      role\n    }\n  }\n}\n\nmutation RefreshSession($input: RefreshTokenInput!) {\n  refreshSession(input: $input) {\n    accessToken\n    refreshToken\n    user {\n      id\n      username\n      displayName\n      email\n      role\n    }\n  }\n}\n\nmutation Logout($input: RefreshTokenInput!) {\n  logout(input: $input)\n}\n\nmutation LogoutAll {\n  logoutAll\n}"];
+/**
+ * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function graphql(source: "query UserByUsername($username: String!) {\n  userByUsername(username: $username) {\n    id\n    username\n    displayName\n    bio\n    role\n    suspended\n    followersCount\n    followingCount\n    followedByMe\n  }\n}\n\nquery UserTweets($username: String!, $limit: Int) {\n  userTweets(username: $username, limit: $limit) {\n    ...TweetCard\n  }\n}\n\nmutation FollowUser($input: FollowUserInput!) {\n  followUser(input: $input)\n}\n\nmutation UnfollowUser($input: FollowUserInput!) {\n  unfollowUser(input: $input)\n}\n\nmutation SuspendUser($input: SuspendUserInput!) {\n  suspendUser(input: $input) {\n    id\n    suspended\n  }\n}"): (typeof documents)["query UserByUsername($username: String!) {\n  userByUsername(username: $username) {\n    id\n    username\n    displayName\n    bio\n    role\n    suspended\n    followersCount\n    followingCount\n    followedByMe\n  }\n}\n\nquery UserTweets($username: String!, $limit: Int) {\n  userTweets(username: $username, limit: $limit) {\n    ...TweetCard\n  }\n}\n\nmutation FollowUser($input: FollowUserInput!) {\n  followUser(input: $input)\n}\n\nmutation UnfollowUser($input: FollowUserInput!) {\n  unfollowUser(input: $input)\n}\n\nmutation SuspendUser($input: SuspendUserInput!) {\n  suspendUser(input: $input) {\n    id\n    suspended\n  }\n}"];
+/**
+ * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function graphql(source: "fragment TweetCard on Tweet {\n  id\n  content\n  createdAt\n  parentId\n  likesCount\n  likedByMe\n  author {\n    id\n    username\n    displayName\n  }\n}\n\nquery Feed($limit: Int) {\n  feed(limit: $limit) {\n    ...TweetCard\n  }\n}\n\nmutation CreateTweet($input: CreateTweetInput!) {\n  createTweet(input: $input) {\n    ...TweetCard\n  }\n}\n\nmutation DeleteTweet($input: DeleteTweetInput!) {\n  deleteTweet(input: $input)\n}\n\nmutation ToggleLike($input: ToggleLikeInput!) {\n  toggleLike(input: $input) {\n    liked\n    likesCount\n  }\n}\n\nquery TweetLikes($tweetId: ID!) {\n  tweetLikes(tweetId: $tweetId) {\n    id\n    username\n    displayName\n    followedByMe\n  }\n}"): (typeof documents)["fragment TweetCard on Tweet {\n  id\n  content\n  createdAt\n  parentId\n  likesCount\n  likedByMe\n  author {\n    id\n    username\n    displayName\n  }\n}\n\nquery Feed($limit: Int) {\n  feed(limit: $limit) {\n    ...TweetCard\n  }\n}\n\nmutation CreateTweet($input: CreateTweetInput!) {\n  createTweet(input: $input) {\n    ...TweetCard\n  }\n}\n\nmutation DeleteTweet($input: DeleteTweetInput!) {\n  deleteTweet(input: $input)\n}\n\nmutation ToggleLike($input: ToggleLikeInput!) {\n  toggleLike(input: $input) {\n    liked\n    likesCount\n  }\n}\n\nquery TweetLikes($tweetId: ID!) {\n  tweetLikes(tweetId: $tweetId) {\n    id\n    username\n    displayName\n    followedByMe\n  }\n}"];
+
+export function graphql(source: string) {
+  return (documents as any)[source] ?? {};
+}
+
+export type DocumentType<TDocumentNode extends DocumentNode<any, any>> = TDocumentNode extends DocumentNode<  infer TType,  any>  ? TType  : never;

@@ -1,0 +1,30 @@
+# Campos que o cartão de um tweet mostra; reaproveitado por feed, perfil e criação.
+fragment TweetCard on Tweet {
+  id
+  content
+  createdAt
+  parentId
+  likesCount
+  likedByMe
+  author { id username displayName }
+}
+
+query Feed($limit: Int) {
+  feed(limit: $limit) { ...TweetCard }
+}
+
+mutation CreateTweet($input: CreateTweetInput!) {
+  createTweet(input: $input) { ...TweetCard }
+}
+
+mutation DeleteTweet($input: DeleteTweetInput!) {
+  deleteTweet(input: $input)
+}
+
+mutation ToggleLike($input: ToggleLikeInput!) {
+  toggleLike(input: $input) { liked likesCount }
+}
+
+query TweetLikes($tweetId: ID!) {
+  tweetLikes(tweetId: $tweetId) { id username displayName followedByMe }
+}

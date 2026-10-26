@@ -1,0 +1,29 @@
+query UserByUsername($username: String!) {
+  userByUsername(username: $username) {
+    id
+    username
+    displayName
+    bio
+    role
+    suspended
+    followersCount
+    followingCount
+    followedByMe
+  }
+}
+
+query UserTweets($username: String!, $limit: Int) {
+  userTweets(username: $username, limit: $limit) { ...TweetCard }
+}
+
+mutation FollowUser($input: FollowUserInput!) {
+  followUser(input: $input)
+}
+
+mutation UnfollowUser($input: FollowUserInput!) {
+  unfollowUser(input: $input)
+}
+
+mutation SuspendUser($input: SuspendUserInput!) {
+  suspendUser(input: $input) { id suspended }
+}
