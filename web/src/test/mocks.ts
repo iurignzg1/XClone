@@ -3,6 +3,8 @@ import { useAuthStore, type SessionUser } from '../features/auth/auth.store';
 import {
   DeleteTweetDocument,
   FeedDocument,
+  FollowersDocument,
+  FollowingDocument,
   LoginDocument,
   SearchUsersDocument,
   ToggleLikeDocument,
@@ -126,6 +128,16 @@ export const updateProfileMock = (displayName: string, bio: string, cover = 'gra
 export const searchUsersMock = (query: string, people: (typeof ana)[]) => ({
   request: { query: SearchUsersDocument, variables: { query } },
   result: { data: { searchUsers: people.map(asUser) } },
+});
+
+export const followersMock = (username: string, people: (typeof ana)[]) => ({
+  request: { query: FollowersDocument, variables: { username } },
+  result: { data: { followers: people.map((person) => ({ ...asUser(person), followedByMe: false })) } },
+});
+
+export const followingMock = (username: string, people: (typeof ana)[]) => ({
+  request: { query: FollowingDocument, variables: { username } },
+  result: { data: { following: people.map((person) => ({ ...asUser(person), followedByMe: true })) } },
 });
 
 export const userTweetsMock = (username: string, tweets: unknown[]) => ({

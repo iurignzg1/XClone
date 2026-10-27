@@ -8,6 +8,8 @@ import {
   deleteForbiddenMock,
   feedMock,
   feedOfflineMock,
+  followersMock,
+  followingMock,
   loginAs,
   loginMock,
   logout,
@@ -423,6 +425,39 @@ describe('detalhe do pio e perfil', () => {
     // O mock da mutation só responde se a capa enviada for 'sol'.
     expect(await screen.findByRole('button', { name: 'Editar perfil' })).toBeInTheDocument();
     expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+  });
+
+  it('clicar em "seguidores" abre a lista de quem segue o perfil', async () => {
+    loginAs();
+    renderApp('/bia', [profileMock(bia, 'oi'), userTweetsMock('bia', []), followersMock('bia', [caio])]);
+
+    await userEvent.click(await screen.findByRole('button', { name: '3 seguidores' }));
+
+    const dialog = await screen.findByRole('dialog', { name: 'Seguidores' });
+    expect(await within(dialog).findByText('Caio')).toBeInTheDocument();
+    expect(within(dialog).getByRole('button', { name: 'Seguir' })).toBeInTheDocument();
+  });
+
+  it('clicar em "seguindo" abre a lista de quem o perfil segue', async () => {
+    loginAs();
+    renderApp('/bia', [profileMock(bia, 'oi'), userTweetsMock('bia', []), followingMock('bia', [caio])]);
+
+    await userEvent.click(await screen.findByRole('button', { name: '1 seguindo' }));
+
+    const dialog = await screen.findByRole('dialog', { name: 'Seguindo' });
+    expect(await within(dialog).findByText('Caio')).toBeInTheDocument();
+    expect(within(dialog).getByRole('button', { name: 'Seguindo' })).toBeInTheDocument();
+  });
+
+  it('a lista vazia avisa, e Esc fecha a janela', async () => {
+    loginAs();
+    renderApp('/bia', [profileMock(bia, 'oi'), userTweetsMock('bia', []), followersMock('bia', [])]);
+
+    await userEvent.click(await screen.findByRole('button', { name: '3 seguidores' }));
+    expect(await screen.findByText('Ninguém segue @bia ainda.')).toBeInTheDocument();
+    await userEvent.keyboard('{Escape}');
+
+    expect(screen.queryByRole('dialog', { name: 'Seguidores' })).not.toBeInTheDocument();
   });
 
   it('no perfil de outra pessoa não existe "Editar perfil"', async () => {

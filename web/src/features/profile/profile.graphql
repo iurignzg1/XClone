@@ -32,3 +32,11 @@ mutation SuspendUser($input: SuspendUserInput!) {
 mutation UpdateProfile($input: UpdateProfileInput!) {
   updateProfile(input: $input) { id username displayName email role }
 }
+
+query Followers($username: String!) {
+  followers(username: $username) { id username displayName followedByMe }
+}
+
+query Following($username: String!) {
+  following(username: $username) { id username displayName followedByMe }
+}

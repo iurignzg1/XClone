@@ -27,11 +27,17 @@
 .bio { margin: 0; overflow-wrap: anywhere; white-space: pre-wrap; }
 
 /* Seguindo na esquerda e seguidores na direita, com um número grande em cada. */
-.stats { margin: 0; display: flex; justify-content: space-between; gap: 16px; padding-top: 18px; border-top: 1px solid var(--line); }
-.stats div { display: flex; flex-direction: column-reverse; gap: 2px; }
-.stats div:last-child { align-items: flex-end; text-align: right; }
-.stats dd { margin: 0; font-size: 2rem; font-weight: 600; line-height: 1.1; }
-.stats dt { color: var(--muted); font-size: 0.78rem; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; }
+/* Seguindo na esquerda e seguidores na direita. Cada número é um botão que
+   abre a lista de pessoas; o rótulo fica em cima do número. */
+.stats { display: flex; justify-content: space-between; gap: 16px; padding-top: 14px; border-top: 1px solid var(--line); }
+.stat {
+  display: flex; flex-direction: column-reverse; align-items: flex-start; gap: 2px; margin: 0 -10px;
+  padding: 6px 10px; border: none; border-radius: var(--radius); background: transparent; text-align: left;
+}
+.stat:last-child { align-items: flex-end; text-align: right; }
+.stat:hover:not(:disabled) { background: var(--hover); }
+.statNumber { font-size: 2rem; font-weight: 600; line-height: 1.1; }
+.statLabel { color: var(--muted); font-size: 0.78rem; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; }
 
 .buttons { display: flex; flex-wrap: wrap; gap: 8px; }
 .buttons button { flex: 1 1 8rem; }

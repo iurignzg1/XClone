@@ -12,6 +12,7 @@ import { TweetSkeletons } from '../tweets/TweetSkeleton';
 import { Cover } from './Cover';
 import { toCoverId, type CoverId } from './covers';
 import { EditProfileForm } from './EditProfileForm';
+import { FollowListModal, type FollowList } from './FollowListModal';
 import { FollowButton } from './FollowButton';
 import styles from './ProfilePage.module.css';
 import shared from '../../styles/shared.module.css';
@@ -25,6 +26,8 @@ export function ProfilePage() {
   const tweets = useQuery(UserTweetsDocument, { variables: { username } });
   const [editing, setEditing] = useState(false);
   const [confirmSuspend, setConfirmSuspend] = useState(false);
+  // Lista aberta ao clicar nos números (seguidores ou seguindo).
+  const [openList, setOpenList] = useState<FollowList | null>(null);
   // Capa escolhida no formulário, ainda não salva: aparece no topo como prévia.
   const [previewCover, setPreviewCover] = useState<CoverId | null>(null);
   const [suspend, suspendState] = useMutation(SuspendUserDocument, { refetchQueries: 'active' });
@@ -77,10 +80,20 @@ export function ProfilePage() {
             </>
           )}
 
-          <dl className={styles.stats}>
-            <div><dd>{user.followingCount}</dd><dt>seguindo</dt></div>
-            <div><dd>{user.followersCount}</dd><dt>seguidores</dt></div>
-          </dl>
+          {/* Os números abrem a lista de pessoas. */}
+          <div className={styles.stats}>
+            <button className={styles.stat} onClick={() => setOpenList('following')}>
+              <span className={styles.statNumber}>{user.followingCount}</span>{' '}
+              <span className={styles.statLabel}>seguindo</span>
+            </button>
+            <button className={styles.stat} onClick={() => setOpenList('followers')}>
+              <span className={styles.statNumber}>{user.followersCount}</span>{' '}
+              <span className={styles.statLabel}>seguidores</span>
+            </button>
+          </div>
+          {openList && (
+            <FollowListModal username={user.username} list={openList} onClose={() => setOpenList(null)} />
+          )}
 
           {!editing && (
             <div className={styles.buttons}>
