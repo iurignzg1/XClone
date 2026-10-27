@@ -1,4 +1,5 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
+import DataLoader from 'dataloader';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { UsersService } from '../../users/application/users.service.js';
 import {
@@ -38,7 +39,7 @@ export class TweetsService {
   async findById(id: string): Promise<Tweet> {
     const tweet = await this.tweetRepository.findById(id);
     if (!tweet) {
-      throw new NotFoundException('Tweet não encontrado');
+      throw new NotFoundException('Pio não encontrado');
     }
     return tweet;
   }
@@ -48,6 +49,15 @@ export class TweetsService {
   async findByUsername(username: string, limit: number): Promise<Tweet[]> {
     const user = await this.usersService.getByUsername(username);
     return this.tweetRepository.findByAuthors([user.id], limit);
+  }
+
+  // Um loader por requisição: junta as contagens de respostas de todos os
+  // tweets da mesma resposta numa única consulta (sem N+1).
+  createRepliesCountLoader(): DataLoader<string, number> {
+    return new DataLoader<string, number>(async (tweetIds) => {
+      const totals = await this.tweetRepository.countReplies([...tweetIds]);
+      return tweetIds.map((id) => totals.get(id) ?? 0);
+    });
   }
 
   findReplies(tweetId: string): Promise<Tweet[]> {
@@ -66,8 +76,12 @@ export class TweetsService {
     }
   }
 
-  findByAuthors(authorIds: string[], limit: number): Promise<Tweet[]> {
-    return this.tweetRepository.findByAuthors(authorIds, limit);
+  findByAuthors(
+    authorIds: string[],
+    limit: number,
+    after?: string,
+  ): Promise<Tweet[]> {
+    return this.tweetRepository.findByAuthors(authorIds, limit, after);
   }
 
   addLikes(tweetId: string, delta: number): Promise<Tweet | null> {

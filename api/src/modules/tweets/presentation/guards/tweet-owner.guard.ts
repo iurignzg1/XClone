@@ -23,9 +23,7 @@ export class TweetOwnerGuard implements CanActivate {
     const tweet = await this.tweetsService.findById(input.tweetId);
     const isAuthor = tweet.authorId === req.user.id;
     if (!isAuthor && !MODERATION_ROLES.includes(req.user.role)) {
-      throw new ForbiddenException(
-        'Você só pode apagar os seus próprios tweets',
-      );
+      throw new ForbiddenException('Você só pode apagar os seus próprios pios');
     }
     return true;
   }

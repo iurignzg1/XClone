@@ -3,51 +3,8 @@ import { TweetsService } from '../../tweets/application/tweets.service.js';
 import type { Tweet } from '../../tweets/domain/tweet.entity.js';
 import { UsersService } from '../../users/application/users.service.js';
 import type { User } from '../../users/domain/user.entity.js';
-import { LikeRepository } from '../domain/like.repository.js';
 import { LikesService } from './likes.service.js';
-
-class InMemoryLikeRepository extends LikeRepository {
-  likes = new Set<string>();
-
-  add(userId: string, tweetId: string): Promise<boolean> {
-    const key = `${userId}:${tweetId}`;
-    const isNew = !this.likes.has(key);
-    this.likes.add(key);
-    return Promise.resolve(isNew);
-  }
-
-  remove(userId: string, tweetId: string): Promise<boolean> {
-    return Promise.resolve(this.likes.delete(`${userId}:${tweetId}`));
-  }
-
-  removeAllForTweet(tweetId: string): Promise<void> {
-    for (const key of this.likes) {
-      if (key.endsWith(`:${tweetId}`)) this.likes.delete(key);
-    }
-    return Promise.resolve();
-  }
-
-  // Ordem de inserção = ordem das curtidas (a mais recente é a última).
-  findLikerIds(tweetId: string, limit: number): Promise<string[]> {
-    return Promise.resolve(
-      [...this.likes]
-        .filter((key) => key.endsWith(`:${tweetId}`))
-        .map((key) => key.split(':')[0])
-        .reverse()
-        .slice(0, limit),
-    );
-  }
-
-  // Cada chamada fica registrada para os testes contarem as consultas.
-  lookups: string[][] = [];
-
-  findLikedTweetIds(userId: string, tweetIds: string[]): Promise<string[]> {
-    this.lookups.push(tweetIds);
-    return Promise.resolve(
-      tweetIds.filter((tweetId) => this.likes.has(`${userId}:${tweetId}`)),
-    );
-  }
-}
+import { InMemoryLikeRepository } from '../testing/in-memory-like.repository.js';
 
 // Só os dois métodos do TweetsService que o LikesService usa.
 function fakeTweetsService(tweet: Tweet) {
@@ -55,7 +12,7 @@ function fakeTweetsService(tweet: Tweet) {
     findById: (id: string) =>
       id === tweet.id
         ? Promise.resolve(tweet)
-        : Promise.reject(new NotFoundException('Tweet não encontrado')),
+        : Promise.reject(new NotFoundException('Pio não encontrado')),
     // Mesma semântica do repositório real: soma sem trava e, na leitura,
     // nunca devolve contador negativo.
     addLikes: (id: string, delta: number) => {

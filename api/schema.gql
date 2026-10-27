@@ -54,10 +54,11 @@ type Mutation {
   suspendUser(input: SuspendUserInput!): User!
   toggleLike(input: ToggleLikeInput!): ToggleLikePayload!
   unfollowUser(input: FollowUserInput!): Boolean!
+  updateProfile(input: UpdateProfileInput!): Me!
 }
 
 type Query {
-  feed(limit: Int! = 20): [Tweet!]!
+  feed(after: ID, limit: Int! = 20): [Tweet!]!
   me: Me!
   tweet(id: ID!): Tweet!
   tweetLikes(limit: Int! = 50, tweetId: ID!): [User!]!
@@ -99,6 +100,12 @@ type Tweet {
   likesCount: Int!
   parentId: ID
   replies: [Tweet!]!
+  repliesCount: Int!
+}
+
+input UpdateProfileInput {
+  bio: String!
+  displayName: String!
 }
 
 type User {

@@ -12,6 +12,6 @@ export class FeedResolver {
 
   @Query(() => [TweetType])
   feed(@CurrentUser() user: User, @Args() args: FeedArgs): Promise<Tweet[]> {
-    return this.feedService.getFeed(user.id, args.limit);
+    return this.feedService.getFeed(user.id, args.limit, args.after);
   }
 }

@@ -18,3 +18,9 @@ export interface NewUser {
   passwordHash: string;
   displayName: string;
 }
+
+// O que a própria pessoa pode editar no perfil.
+export interface ProfileChanges {
+  displayName: string;
+  bio: string;
+}

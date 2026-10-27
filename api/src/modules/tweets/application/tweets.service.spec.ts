@@ -1,62 +1,9 @@
 import { NotFoundException } from '@nestjs/common';
 import { EventEmitter2 } from '@nestjs/event-emitter';
-import type { NewTweet, Tweet } from '../domain/tweet.entity.js';
 import { UsersService } from '../../users/application/users.service.js';
 import type { User } from '../../users/domain/user.entity.js';
-import { TweetRepository } from '../domain/tweet.repository.js';
 import { TweetsService } from './tweets.service.js';
-
-class InMemoryTweetRepository extends TweetRepository {
-  tweets: Tweet[] = [];
-
-  create(data: NewTweet): Promise<Tweet> {
-    const tweet: Tweet = {
-      id: `tweet-${this.tweets.length + 1}`,
-      content: data.content,
-      authorId: data.authorId,
-      parentId: data.parentId ?? null,
-      likesCount: 0,
-      createdAt: new Date(),
-    };
-    this.tweets.push(tweet);
-    return Promise.resolve(tweet);
-  }
-
-  findById(id: string): Promise<Tweet | null> {
-    return Promise.resolve(this.tweets.find((t) => t.id === id) ?? null);
-  }
-
-  deleteById(id: string): Promise<boolean> {
-    const before = this.tweets.length;
-    this.tweets = this.tweets.filter((t) => t.id !== id);
-    return Promise.resolve(this.tweets.length < before);
-  }
-
-  findByAuthors(authorIds: string[], limit: number): Promise<Tweet[]> {
-    return Promise.resolve(
-      this.tweets
-        .filter((t) => authorIds.includes(t.authorId) && t.parentId === null)
-        .reverse()
-        .slice(0, limit),
-    );
-  }
-
-  addLikes(id: string, delta: number): Promise<Tweet | null> {
-    const tweet = this.tweets.find((t) => t.id === id);
-    if (!tweet) return Promise.resolve(null);
-    tweet.likesCount += delta;
-    return Promise.resolve({
-      ...tweet,
-      likesCount: Math.max(0, tweet.likesCount),
-    });
-  }
-
-  findReplies(parentId: string, limit: number): Promise<Tweet[]> {
-    return Promise.resolve(
-      this.tweets.filter((t) => t.parentId === parentId).slice(0, limit),
-    );
-  }
-}
+import { InMemoryTweetRepository } from '../testing/in-memory-tweet.repository.js';
 
 // Só o método do UsersService que o TweetsService usa: "iuri" existe e é o u1.
 const fakeUsersService = {
@@ -149,6 +96,27 @@ describe('TweetsService', () => {
       const replies = await service.findReplies(a.id);
 
       expect(replies).toEqual([replyToA]);
+    });
+  });
+
+  describe('createRepliesCountLoader', () => {
+    it('conta as respostas de vários tweets numa consulta só', async () => {
+      const a = await service.create({ authorId: 'u1', content: 'a' });
+      const b = await service.create({ authorId: 'u1', content: 'b' });
+      const c = await service.create({ authorId: 'u1', content: 'c' });
+      for (const parentId of [a.id, a.id, b.id]) {
+        await service.create({ authorId: 'u2', content: 'r', parentId });
+      }
+      const loader = service.createRepliesCountLoader();
+
+      const totals = await Promise.all([
+        loader.load(a.id),
+        loader.load(b.id),
+        loader.load(c.id),
+      ]);
+
+      expect(totals).toEqual([2, 1, 0]);
+      expect(repository.countRepliesCalls).toHaveLength(1);
     });
   });
 

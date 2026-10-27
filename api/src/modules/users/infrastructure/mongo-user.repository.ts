@@ -2,7 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { isValidObjectId, Model } from 'mongoose';
 import { UserConflictError } from '../domain/user-conflict.error.js';
-import type { NewUser, User } from '../domain/user.entity.js';
+import type { NewUser, ProfileChanges, User } from '../domain/user.entity.js';
 import { UserRepository } from '../domain/user.repository.js';
 import { UserDocument, UserModel } from './user.schema.js';
 
@@ -47,6 +47,20 @@ export class MongoUserRepository extends UserRepository {
       _id: { $in: ids.filter((id) => isValidObjectId(id)) },
     });
     return docs.map((doc) => this.toDomain(doc));
+  }
+
+  async updateProfile(
+    id: string,
+    changes: ProfileChanges,
+  ): Promise<User | null> {
+    if (!isValidObjectId(id)) return null;
+    // Só os campos do perfil entram no $set: nada além disso é editável por aqui.
+    const doc = await this.userModel.findByIdAndUpdate(
+      id,
+      { displayName: changes.displayName, bio: changes.bio },
+      { new: true },
+    );
+    return doc && this.toDomain(doc);
   }
 
   async setSuspended(id: string, suspended: boolean): Promise<User | null> {

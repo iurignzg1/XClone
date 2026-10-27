@@ -2,6 +2,7 @@ import {
   Args,
   Context,
   ID,
+  Int,
   Mutation,
   Parent,
   Query,
@@ -25,6 +26,7 @@ import { TweetType } from './types/tweet.type.js';
 // O contexto do GraphQL vive uma requisição inteira: é onde guardamos o loader.
 interface TweetsGqlContext {
   userByIdLoader?: DataLoader<string, User>;
+  repliesCountLoader?: DataLoader<string, number>;
 }
 
 @Resolver(() => TweetType)
@@ -67,6 +69,18 @@ export class TweetsResolver {
   @ResolveField(() => [TweetType])
   replies(@Parent() tweet: Tweet): Promise<Tweet[]> {
     return this.tweetsService.findReplies(tweet.id);
+  }
+
+  // Campo calculado: quantas respostas o tweet tem. O DataLoader conta as de
+  // todos os tweets da resposta numa consulta só.
+  @ResolveField(() => Int)
+  repliesCount(
+    @Parent() tweet: Tweet,
+    @Context() context: TweetsGqlContext,
+  ): Promise<number> {
+    context.repliesCountLoader ??=
+      this.tweetsService.createRepliesCountLoader();
+    return context.repliesCountLoader.load(tweet.id);
   }
 
   // Campo calculado: quem escreveu o tweet. O DataLoader junta os autores de

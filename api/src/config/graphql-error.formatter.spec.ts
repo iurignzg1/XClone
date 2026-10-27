@@ -33,12 +33,12 @@ describe('createGraphQLErrorFormatter', () => {
   describe('erros esperados (para o cliente)', () => {
     it('traduz o status do Nest para o código e mantém a mensagem', () => {
       const { formatted, error } = fromResolver(
-        new NotFoundException('Tweet não encontrado'),
+        new NotFoundException('Pio não encontrado'),
       );
 
       const result = production(formatted, error);
 
-      expect(result.message).toBe('Tweet não encontrado');
+      expect(result.message).toBe('Pio não encontrado');
       expect(result.extensions?.code).toBe('NOT_FOUND');
     });
 
@@ -65,7 +65,7 @@ describe('createGraphQLErrorFormatter', () => {
 
     it('não repassa a estrutura interna da exceção (originalError)', () => {
       const { formatted, error } = fromResolver(
-        new NotFoundException('Tweet não encontrado'),
+        new NotFoundException('Pio não encontrado'),
       );
       const withOriginal: GraphQLFormattedError = {
         ...formatted,

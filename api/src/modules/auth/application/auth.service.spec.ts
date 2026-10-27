@@ -6,101 +6,11 @@ import {
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import { UsersService } from '../../users/application/users.service.js';
-import { UserConflictError } from '../../users/domain/user-conflict.error.js';
-import { UserRole } from '../../users/domain/user-role.enum.js';
-import type { NewUser, User } from '../../users/domain/user.entity.js';
-import { UserRepository } from '../../users/domain/user.repository.js';
-import { PasswordHasher } from '../domain/password-hasher.js';
-import type { NewSession, Session } from '../domain/session.entity.js';
-import { SessionRepository } from '../domain/session.repository.js';
 import { AuthService } from './auth.service.js';
 import { TokenService } from './token.service.js';
-
-class InMemoryUserRepository extends UserRepository {
-  users: User[] = [];
-
-  create(data: NewUser): Promise<User> {
-    const taken = this.users.find(
-      (u) => u.username === data.username || u.email === data.email,
-    );
-    if (taken) {
-      return Promise.reject(
-        new UserConflictError(
-          taken.email === data.email ? 'email' : 'username',
-        ),
-      );
-    }
-    const user: User = {
-      ...data,
-      id: `user-${this.users.length + 1}`,
-      role: UserRole.USER,
-      bio: '',
-      suspended: false,
-      createdAt: new Date(),
-    };
-    this.users.push(user);
-    return Promise.resolve(user);
-  }
-  findById(id: string) {
-    return Promise.resolve(this.users.find((u) => u.id === id) ?? null);
-  }
-  findByEmail(email: string) {
-    return Promise.resolve(this.users.find((u) => u.email === email) ?? null);
-  }
-  setSuspended(id: string, suspended: boolean) {
-    const user = this.users.find((u) => u.id === id);
-    if (user) user.suspended = suspended;
-    return Promise.resolve(user ?? null);
-  }
-  findByIds(ids: string[]) {
-    return Promise.resolve(this.users.filter((u) => ids.includes(u.id)));
-  }
-  findByUsername(username: string) {
-    return Promise.resolve(
-      this.users.find((u) => u.username === username) ?? null,
-    );
-  }
-}
-
-class InMemorySessionRepository extends SessionRepository {
-  sessions: Session[] = [];
-
-  create(data: NewSession): Promise<Session> {
-    const session: Session = {
-      ...data,
-      id: `session-${this.sessions.length + 1}`,
-      revokedAt: null,
-    };
-    this.sessions.push(session);
-    return Promise.resolve(session);
-  }
-  findByTokenHash(tokenHash: string) {
-    return Promise.resolve(
-      this.sessions.find((s) => s.tokenHash === tokenHash) ?? null,
-    );
-  }
-  revoke(id: string) {
-    const session = this.sessions.find((s) => s.id === id);
-    if (!session || session.revokedAt) return Promise.resolve(false);
-    session.revokedAt = new Date();
-    return Promise.resolve(true);
-  }
-  revokeAllByUser(userId: string) {
-    for (const s of this.sessions) {
-      if (s.userId === userId && !s.revokedAt) s.revokedAt = new Date();
-    }
-    return Promise.resolve();
-  }
-}
-
-class FakePasswordHasher extends PasswordHasher {
-  hash(plain: string) {
-    return Promise.resolve(`hashed:${plain}`);
-  }
-  verify(hash: string, plain: string) {
-    return Promise.resolve(hash === `hashed:${plain}`);
-  }
-}
+import { InMemoryUserRepository } from '../../users/testing/in-memory-user.repository.js';
+import { FakePasswordHasher } from '../testing/fake-password-hasher.js';
+import { InMemorySessionRepository } from '../testing/in-memory-session.repository.js';
 
 const signupData = {
   username: 'iuri',

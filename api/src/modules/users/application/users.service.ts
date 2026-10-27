@@ -4,7 +4,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import DataLoader from 'dataloader';
-import type { NewUser, User } from '../domain/user.entity.js';
+import type { NewUser, ProfileChanges, User } from '../domain/user.entity.js';
 import { UserRepository } from '../domain/user.repository.js';
 
 @Injectable()
@@ -29,6 +29,16 @@ export class UsersService {
 
   async getByUsername(username: string): Promise<User> {
     const user = await this.userRepository.findByUsername(username);
+    if (!user) {
+      throw new NotFoundException('Usuário não encontrado');
+    }
+    return user;
+  }
+
+  // Cada pessoa só altera o próprio perfil: o id vem do usuário logado, nunca do
+  // cliente, então não dá para editar o perfil de outra conta.
+  async updateProfile(userId: string, changes: ProfileChanges): Promise<User> {
+    const user = await this.userRepository.updateProfile(userId, changes);
     if (!user) {
       throw new NotFoundException('Usuário não encontrado');
     }

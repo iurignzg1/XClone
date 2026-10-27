@@ -11,7 +11,7 @@ const config: Config = {
   transform: {
     '^.+\\.ts$': ['ts-jest', { useESM: true, tsconfig: 'tsconfig.json' }],
   },
-  collectCoverageFrom: ['src/**/*.ts'],
+  collectCoverageFrom: ['src/**/*.ts', '!src/**/testing/**'],
   coverageDirectory: 'coverage',
 };
 

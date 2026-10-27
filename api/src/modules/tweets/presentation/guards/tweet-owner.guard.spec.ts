@@ -15,7 +15,7 @@ const fakeTweetsService = {
   findById: (id: string) =>
     id === tweet.id
       ? Promise.resolve(tweet)
-      : Promise.reject(new NotFoundException('Tweet não encontrado')),
+      : Promise.reject(new NotFoundException('Pio não encontrado')),
 } as unknown as TweetsService;
 
 function contextFor(user: Partial<User>, tweetId: string) {

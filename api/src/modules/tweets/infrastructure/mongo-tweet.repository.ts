@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { isValidObjectId, Model } from 'mongoose';
+import { isValidObjectId, Model, Types } from 'mongoose';
 import type { NewTweet, Tweet } from '../domain/tweet.entity.js';
 import { TweetRepository } from '../domain/tweet.repository.js';
 import { TweetDocument, TweetModel } from './tweet.schema.js';
@@ -35,11 +35,39 @@ export class MongoTweetRepository extends TweetRepository {
     return docs.map((doc) => this.toDomain(doc));
   }
 
-  async findByAuthors(authorIds: string[], limit: number): Promise<Tweet[]> {
+  async countReplies(parentIds: string[]): Promise<Map<string, number>> {
+    const validIds = parentIds.filter((id) => isValidObjectId(id));
+    const rows = await this.tweetModel.aggregate<{
+      _id: Types.ObjectId;
+      total: number;
+    }>([
+      {
+        $match: {
+          parentId: { $in: validIds.map((id) => new Types.ObjectId(id)) },
+        },
+      },
+      { $group: { _id: '$parentId', total: { $sum: 1 } } },
+    ]);
+    return new Map(rows.map((row) => [row._id.toString(), row.total]));
+  }
+
+  async findByAuthors(
+    authorIds: string[],
+    limit: number,
+    after?: string,
+  ): Promise<Tweet[]> {
+    // Um cursor mal formado não aponta para lugar nenhum: nada depois dele.
+    if (after !== undefined && !isValidObjectId(after)) return [];
     // parentId: null filtra só tweets "de topo": respostas ficam no detalhe.
+    // Ordena e pagina pelo _id (nasce com a data de criação e nunca empata,
+    // ao contrário do createdAt), então o cursor é só o id do último tweet.
     const docs = await this.tweetModel
-      .find({ authorId: { $in: authorIds }, parentId: null })
-      .sort({ createdAt: -1 })
+      .find({
+        authorId: { $in: authorIds },
+        parentId: null,
+        ...(after !== undefined && { _id: { $lt: after } }),
+      })
+      .sort({ _id: -1 })
       .limit(limit);
     return docs.map((doc) => this.toDomain(doc));
   }

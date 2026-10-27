@@ -1,47 +1,6 @@
 import { BadRequestException, NotFoundException } from '@nestjs/common';
-import { UserRole } from '../domain/user-role.enum.js';
-import type { NewUser, User } from '../domain/user.entity.js';
-import { UserRepository } from '../domain/user.repository.js';
 import { UsersService } from './users.service.js';
-
-class InMemoryUserRepository extends UserRepository {
-  users: User[] = [];
-
-  create(data: NewUser): Promise<User> {
-    const user: User = {
-      ...data,
-      id: `user-${this.users.length + 1}`,
-      role: UserRole.USER,
-      bio: '',
-      suspended: false,
-      createdAt: new Date(),
-    };
-    this.users.push(user);
-    return Promise.resolve(user);
-  }
-  findById(id: string) {
-    return Promise.resolve(this.users.find((u) => u.id === id) ?? null);
-  }
-  findByEmail(email: string) {
-    return Promise.resolve(this.users.find((u) => u.email === email) ?? null);
-  }
-  findByUsername(username: string) {
-    return Promise.resolve(
-      this.users.find((u) => u.username === username) ?? null,
-    );
-  }
-  setSuspended(id: string, suspended: boolean) {
-    const user = this.users.find((u) => u.id === id);
-    if (user) user.suspended = suspended;
-    return Promise.resolve(user ?? null);
-  }
-  // Cada chamada fica registrada para os testes contarem as consultas.
-  findByIdsCalls: string[][] = [];
-  findByIds(ids: string[]) {
-    this.findByIdsCalls.push(ids);
-    return Promise.resolve(this.users.filter((u) => ids.includes(u.id)));
-  }
-}
+import { InMemoryUserRepository } from '../testing/in-memory-user.repository.js';
 
 describe('UsersService', () => {
   let repository: InMemoryUserRepository;
@@ -69,6 +28,53 @@ describe('UsersService', () => {
       await expect(service.getByUsername('fantasma')).rejects.toBeInstanceOf(
         NotFoundException,
       );
+    });
+  });
+
+  describe('updateProfile', () => {
+    it('troca o nome e a bio e devolve o usuário atualizado', async () => {
+      const user = await service.create({
+        username: 'ana',
+        email: 'ana@example.com',
+        passwordHash: 'hash',
+        displayName: 'Ana',
+      });
+
+      const result = await service.updateProfile(user.id, {
+        displayName: 'Ana Silva',
+        bio: 'Gosto de pios curtos.',
+      });
+
+      expect(result.displayName).toBe('Ana Silva');
+      expect(result.bio).toBe('Gosto de pios curtos.');
+      const saved = repository.users.find((u) => u.id === user.id);
+      expect(saved?.displayName).toBe('Ana Silva');
+      expect(saved?.bio).toBe('Gosto de pios curtos.');
+      expect(saved?.username).toBe('ana');
+      expect(saved?.email).toBe('ana@example.com');
+    });
+
+    it('uma bio vazia apaga a bio', async () => {
+      const user = await service.create({
+        username: 'ana',
+        email: 'ana@example.com',
+        passwordHash: 'hash',
+        displayName: 'Ana',
+      });
+      await service.updateProfile(user.id, { displayName: 'Ana', bio: 'oi' });
+
+      const result = await service.updateProfile(user.id, {
+        displayName: 'Ana',
+        bio: '',
+      });
+
+      expect(result.bio).toBe('');
+    });
+
+    it('recusa quando o usuário não existe', async () => {
+      await expect(
+        service.updateProfile('nao-existe', { displayName: 'Fulano', bio: '' }),
+      ).rejects.toBeInstanceOf(NotFoundException);
     });
   });
 
