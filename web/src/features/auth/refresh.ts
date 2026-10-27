@@ -36,8 +36,13 @@ async function renew(): Promise<string | null> {
     return data.refreshSession.accessToken;
   } catch (error) {
     // O back recusou o refresh token (vencido, revogado ou reusado): a sessão
-    // acabou. Já um erro de rede (API fora do ar) não encerra a sessão.
-    if (CombinedGraphQLErrors.is(error)) clearSession();
+    // acabou. Já um erro de rede (API fora do ar) ou o rate limit (renovações
+    // demais no mesmo minuto) não encerram a sessão: o token ainda vale.
+    if (CombinedGraphQLErrors.is(error) && !isRateLimited(error)) clearSession();
     return null;
   }
+}
+
+function isRateLimited(error: CombinedGraphQLErrors): boolean {
+  return error.errors.some((e) => e.extensions?.code === 'TOO_MANY_REQUESTS');
 }
