@@ -9,6 +9,7 @@ import {
 } from '@nestjs/graphql';
 import type DataLoader from 'dataloader';
 import { CurrentUser } from '../../../common/decorators/current-user.decorator.js';
+import { RateLimit } from '../../../common/decorators/rate-limit.decorator.js';
 import type { Tweet } from '../../tweets/domain/tweet.entity.js';
 import { TweetType } from '../../tweets/presentation/types/tweet.type.js';
 import type { User } from '../../users/domain/user.entity.js';
@@ -55,6 +56,7 @@ export class LikesResolver {
     return this.likesService.getLikedTweets(args.username, args.limit);
   }
 
+  @RateLimit(60)
   @Mutation(() => ToggleLikePayload)
   toggleLike(
     @CurrentUser() user: User,

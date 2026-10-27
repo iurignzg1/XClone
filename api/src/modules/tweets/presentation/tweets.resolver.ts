@@ -12,10 +12,11 @@ import {
 import { UseGuards } from '@nestjs/common';
 import type DataLoader from 'dataloader';
 import { CurrentUser } from '../../../common/decorators/current-user.decorator.js';
+import { RateLimit } from '../../../common/decorators/rate-limit.decorator.js';
 import { UsersService } from '../../users/application/users.service.js';
 import type { User } from '../../users/domain/user.entity.js';
 import { UserType } from '../../users/presentation/types/user.type.js';
-import { TweetsService } from '../application/tweets.service.js';
+import { REPLIES_LIMIT, TweetsService } from '../application/tweets.service.js';
 import type { Tweet } from '../domain/tweet.entity.js';
 import { CreateTweetInput } from './dto/create-tweet.input.js';
 import { DeleteTweetInput } from './dto/delete-tweet.input.js';
@@ -36,6 +37,7 @@ export class TweetsResolver {
     private readonly usersService: UsersService,
   ) {}
 
+  @RateLimit(30)
   @Mutation(() => TweetType)
   createTweet(
     @CurrentUser() user: User,
@@ -72,7 +74,10 @@ export class TweetsResolver {
   }
 
   // Campo calculado: só é buscado quando o cliente pede `replies` na query.
-  @ResolveField(() => [TweetType])
+  // Para o limite de complexidade, conta como uma lista de REPLIES_LIMIT pios.
+  @ResolveField(() => [TweetType], {
+    complexity: ({ childComplexity }) => 1 + childComplexity * REPLIES_LIMIT,
+  })
   replies(@Parent() tweet: Tweet): Promise<Tweet[]> {
     return this.tweetsService.findReplies(tweet.id);
   }

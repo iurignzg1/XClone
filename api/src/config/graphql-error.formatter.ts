@@ -10,6 +10,7 @@ const CODE_BY_STATUS: Record<number, string> = {
   403: 'FORBIDDEN',
   404: 'NOT_FOUND',
   409: 'CONFLICT',
+  429: 'TOO_MANY_REQUESTS',
 };
 
 const INTERNAL_ERROR_MESSAGE = 'Erro interno do servidor';

@@ -53,7 +53,7 @@ describe('createGraphQLErrorFormatter', () => {
       expect(result.extensions?.code).toBe('BAD_USER_INPUT');
     });
 
-    it('não esconde um 4xx sem código mapeado (ex.: 429 do rate limit)', () => {
+    it('traduz o 429 do rate limit para TOO_MANY_REQUESTS', () => {
       const { formatted, error } = fromResolver(
         new HttpException('Muitas tentativas', 429),
       );
@@ -61,6 +61,17 @@ describe('createGraphQLErrorFormatter', () => {
       const result = production(formatted, error);
 
       expect(result.message).toBe('Muitas tentativas');
+      expect(result.extensions?.code).toBe('TOO_MANY_REQUESTS');
+    });
+
+    it('não esconde um 4xx sem código mapeado (ex.: 422)', () => {
+      const { formatted, error } = fromResolver(
+        new HttpException('Não processável', 422),
+      );
+
+      const result = production(formatted, error);
+
+      expect(result.message).toBe('Não processável');
     });
 
     it('não repassa a estrutura interna da exceção (originalError)', () => {

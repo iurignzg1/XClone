@@ -9,7 +9,7 @@ import {
 import type { Tweet } from '../domain/tweet.entity.js';
 import { TweetRepository } from '../domain/tweet.repository.js';
 
-const REPLIES_LIMIT = 50;
+export const REPLIES_LIMIT = 50;
 
 export interface CreateTweetData {
   authorId: string;

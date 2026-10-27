@@ -1,6 +1,7 @@
 import { Args, Mutation, Resolver } from '@nestjs/graphql';
 import { CurrentUser } from '../../../common/decorators/current-user.decorator.js';
 import { Public } from '../../../common/decorators/public.decorator.js';
+import { RateLimit } from '../../../common/decorators/rate-limit.decorator.js';
 import { UserAgent } from '../../../common/decorators/user-agent.decorator.js';
 import type { User } from '../../users/domain/user.entity.js';
 import { AuthResult, AuthService } from '../application/auth.service.js';
@@ -13,7 +14,10 @@ import { AuthPayload } from './types/auth-payload.type.js';
 export class AuthResolver {
   constructor(private readonly authService: AuthService) {}
 
+  // Cada conta nova custa um hash de senha (argon2, de propósito lento):
+  // o limite segura a criação de contas em massa.
   @Public()
+  @RateLimit(5)
   @Mutation(() => AuthPayload)
   signup(
     @Args('input') input: SignupInput,
@@ -22,7 +26,9 @@ export class AuthResolver {
     return this.authService.signup(input, userAgent);
   }
 
+  // Segura quem tenta adivinhar senhas na força bruta.
   @Public()
+  @RateLimit(5)
   @Mutation(() => AuthPayload)
   login(
     @Args('input') input: LoginInput,
@@ -32,6 +38,7 @@ export class AuthResolver {
   }
 
   @Public()
+  @RateLimit(10)
   @Mutation(() => AuthPayload)
   refreshSession(
     @Args('input') input: RefreshTokenInput,
