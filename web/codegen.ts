@@ -13,6 +13,9 @@ const config: CodegenConfig = {
         // Sem isso, o DateTime do GraphQL viraria `any`.
         scalars: { DateTime: 'string' },
         useTypeImports: true,
+        // Inclui o __typename nos tipos: a resposta otimista do like precisa
+        // dele para o Apollo saber o tipo de cada objeto (useToggleLike).
+        nonOptionalTypename: true,
       },
     },
   },

@@ -20,6 +20,9 @@
 /* NavLink põe a classe "active" na página atual. */
 .item:global(.active) { font-weight: 700; background: var(--hover); }
 
+/* "Publicar": abre o composer em janela (ComposerModal). */
+.publish { padding: 10px 16px; font-size: 1rem; }
+
 
 .main { min-width: 0; background: var(--surface); border-radius: var(--radius-lg); box-shadow: 0 1px 3px rgb(0 0 0 / 0.08); overflow: clip; display: flex; flex-direction: column; }
 
@@ -35,3 +38,6 @@
   .sidebar > :last-child { margin-top: auto; }
   .nav { flex-direction: column; }
 }
+
+/* Coluna da direita ("Quem seguir"): só nas telas bem largas (ver lib/layout.ts). */
+.extra { position: sticky; top: 20px; width: 100%; max-width: 320px; justify-self: start; }

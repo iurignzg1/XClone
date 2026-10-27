@@ -63,11 +63,5 @@
 .coverOption:has(input:focus-visible) .coverThumb { outline: 3px solid var(--ink); outline-offset: 2px; }
 .editButtons button { flex: 1 1 0; }
 
-/* Título da lista: uma barra de cor na lateral, como os cabeçalhos de seção do site de referência. */
-.listTitle {
-  position: relative; margin: 12px 16px 4px; padding-inline-start: 14px; font-size: 1.15rem; font-weight: 600;
-}
-.listTitle::before { content: ''; position: absolute; inset-block: 0.15rem; inset-inline-start: 0; width: 3px; background: var(--ink); }
 /* Lista de pios colada, como no feed (os cartões já têm a linha divisória). */
 .page { gap: 0; }
-.empty { padding: 24px 16px; text-align: center; margin: 0; }

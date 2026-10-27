@@ -7,6 +7,11 @@ interface UiState {
   // null = ainda sem escolha: vale o tema do sistema.
   theme: Theme | null;
   setTheme: (theme: Theme) => void;
+  // Modal do composer (o "Publicar" da barra lateral). Não vai para o
+  // localStorage: recarregar a página fecha o modal.
+  composerOpen: boolean;
+  openComposer: () => void;
+  closeComposer: () => void;
 }
 
 // Estado só da interface (não vem do servidor, então não é do Apollo).
@@ -15,6 +20,9 @@ export const useUiStore = create<UiState>()(
     (set) => ({
       theme: null,
       setTheme: (theme) => set({ theme }),
+      composerOpen: false,
+      openComposer: () => set({ composerOpen: true }),
+      closeComposer: () => set({ composerOpen: false }),
     }),
     { name: 'pio-ui', partialize: (state) => ({ theme: state.theme }) },
   ),

@@ -40,3 +40,15 @@ query Followers($username: String!) {
 query Following($username: String!) {
   following(username: $username) { id username displayName followedByMe }
 }
+
+query SuggestedUsers {
+  suggestedUsers(limit: 3) { id username displayName }
+}
+
+query UserReplies($username: String!) {
+  userReplies(username: $username) { ...TweetCard }
+}
+
+query LikedTweets($username: String!) {
+  likedTweets(username: $username) { ...TweetCard }
+}

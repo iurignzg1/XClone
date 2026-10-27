@@ -1,16 +1,20 @@
 import { GraphQLError } from 'graphql';
 import { useAuthStore, type SessionUser } from '../features/auth/auth.store';
 import {
+  CreateTweetDocument,
   DeleteTweetDocument,
   FeedDocument,
   FollowersDocument,
   FollowingDocument,
+  LikedTweetsDocument,
   LoginDocument,
   SearchUsersDocument,
+  SuggestedUsersDocument,
   ToggleLikeDocument,
   TweetDocument,
   TweetLikesDocument,
   UpdateProfileDocument,
+  UserRepliesDocument,
   UserByUsernameDocument,
   UserTweetsDocument,
 } from '../gql/graphql';
@@ -62,7 +66,8 @@ export const feedOfflineMock = () => ({
   error: new TypeError('Failed to fetch'),
 });
 
-export const toggleLikeMock = (tweetId: string, likesCount: number) => ({
+export const toggleLikeMock = (tweetId: string, likesCount: number, delay = 0) => ({
+  delay,
   request: { query: ToggleLikeDocument, variables: { input: { tweetId } } },
   result: {
     data: { toggleLike: { __typename: 'ToggleLikePayload', liked: likesCount > 0, likesCount } },
@@ -140,6 +145,38 @@ export const followingMock = (username: string, people: (typeof ana)[]) => ({
   result: { data: { following: people.map((person) => ({ ...asUser(person), followedByMe: true })) } },
 });
 
+export const toggleLikeErrorMock = (tweetId: string) => ({
+  request: { query: ToggleLikeDocument, variables: { input: { tweetId } } },
+  result: { errors: [new GraphQLError('Pio não encontrado', { extensions: { code: 'NOT_FOUND' } })] },
+});
+
+// Publicar: aceita qualquer variável (o parentId vazio vira undefined).
+export const createTweetMock = (content: string) => ({
+  request: { query: CreateTweetDocument, variables: () => true },
+  result: { data: { createTweet: tweet({ id: 'novo', content, author: asUser(ana) }) } },
+});
+
+export const suggestedUsersMock = (people: (typeof ana)[]) => ({
+  request: { query: SuggestedUsersDocument },
+  result: { data: { suggestedUsers: people.map(asUser) } },
+});
+
+export const userRepliesMock = (username: string, tweets: unknown[]) => ({
+  request: { query: UserRepliesDocument, variables: { username } },
+  result: { data: { userReplies: tweets } },
+});
+
+export const likedTweetsMock = (username: string, tweets: unknown[]) => ({
+  request: { query: LikedTweetsDocument, variables: { username } },
+  result: { data: { likedTweets: tweets } },
+});
+
+export const searchUsersSlowMock = (query: string, people: (typeof ana)[]) => ({
+  delay: 300,
+  request: { query: SearchUsersDocument, variables: { query } },
+  result: { data: { searchUsers: people.map(asUser) } },
+});
+
 export const userTweetsMock = (username: string, tweets: unknown[]) => ({
   request: { query: UserTweetsDocument, variables: { username } },
   result: { data: { userTweets: tweets } },
@@ -165,7 +202,7 @@ export const loginMock = (email: string, password: string) => ({
 // tentativa de restaurar a sessão pela rede.
 export function loginAs(role: SessionUser['role'] = 'USER') {
   useAuthStore.setState({
-    user: { ...ana, email: 'ana@x.com', role },
+    user: { __typename: 'Me', ...ana, email: 'ana@x.com', role },
     accessToken: 'token',
     refreshToken: null,
   });

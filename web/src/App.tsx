@@ -9,7 +9,7 @@ import { useRestoreSession } from './features/auth/useRestoreSession';
 import { ProfilePage } from './features/profile/ProfilePage';
 import { SearchPage } from './features/search/SearchPage';
 import { HomePage } from './features/tweets/HomePage';
-import { TweetPage } from './features/tweets/TweetPage';
+import { TweetPage, TweetRedirect } from './features/tweets/TweetPage';
 import { ProtectedRoute } from './routes/ProtectedRoute';
 import { PublicOnlyRoute } from './routes/PublicOnlyRoute';
 import shared from './styles/shared.module.css';
@@ -35,6 +35,7 @@ export default function App() {
           <Route path="/home" element={<HomePage />} />
           <Route path="/pesquisar" element={<SearchPage />} />
           <Route path="/pio/:id" element={<TweetPage />} />
+          <Route path="/tweet/:id" element={<TweetRedirect />} />
           <Route path="/:username" element={<ProfilePage />} />
           <Route element={<ProtectedRoute role="ADMIN" />}>
             <Route path="/admin" element={<AdminPage />} />

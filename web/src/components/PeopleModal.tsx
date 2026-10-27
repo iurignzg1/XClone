@@ -5,6 +5,7 @@ import { FollowButton } from '../features/profile/FollowButton';
 import { useAuthStore } from '../features/auth/auth.store';
 import { Avatar } from './Avatar';
 import { ErrorBox } from './ErrorBox';
+import { PersonSkeletons } from './PersonSkeleton';
 import styles from './PeopleModal.module.css';
 import shared from '../styles/shared.module.css';
 
@@ -66,7 +67,7 @@ export function PeopleModal({
           </button>
         </header>
         <div className={styles.body}>
-          {loading && !people && <p className={shared.muted}>Carregando…</p>}
+          {loading && !people && <PersonSkeletons />}
           <ErrorBox error={error} />
           {people?.length === 0 && <p className={shared.muted}>{emptyText}</p>}
           <ul className={styles.list}>

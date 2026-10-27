@@ -57,40 +57,40 @@ export type SignupMutationVariables = Exact<{
 }>;
 
 
-export type SignupMutation = { signup: { accessToken: string, refreshToken: string, user: { id: string, username: string, displayName: string, email: string, role: UserRole } } };
+export type SignupMutation = { __typename: 'Mutation', signup: { __typename: 'AuthPayload', accessToken: string, refreshToken: string, user: { __typename: 'Me', id: string, username: string, displayName: string, email: string, role: UserRole } } };
 
 export type LoginMutationVariables = Exact<{
   input: LoginInput;
 }>;
 
 
-export type LoginMutation = { login: { accessToken: string, refreshToken: string, user: { id: string, username: string, displayName: string, email: string, role: UserRole } } };
+export type LoginMutation = { __typename: 'Mutation', login: { __typename: 'AuthPayload', accessToken: string, refreshToken: string, user: { __typename: 'Me', id: string, username: string, displayName: string, email: string, role: UserRole } } };
 
 export type RefreshSessionMutationVariables = Exact<{
   input: RefreshTokenInput;
 }>;
 
 
-export type RefreshSessionMutation = { refreshSession: { accessToken: string, refreshToken: string, user: { id: string, username: string, displayName: string, email: string, role: UserRole } } };
+export type RefreshSessionMutation = { __typename: 'Mutation', refreshSession: { __typename: 'AuthPayload', accessToken: string, refreshToken: string, user: { __typename: 'Me', id: string, username: string, displayName: string, email: string, role: UserRole } } };
 
 export type LogoutMutationVariables = Exact<{
   input: RefreshTokenInput;
 }>;
 
 
-export type LogoutMutation = { logout: boolean };
+export type LogoutMutation = { __typename: 'Mutation', logout: boolean };
 
 export type LogoutAllMutationVariables = Exact<{ [key: string]: never; }>;
 
 
-export type LogoutAllMutation = { logoutAll: boolean };
+export type LogoutAllMutation = { __typename: 'Mutation', logoutAll: boolean };
 
 export type UserByUsernameQueryVariables = Exact<{
   username: string;
 }>;
 
 
-export type UserByUsernameQuery = { userByUsername: { id: string, username: string, displayName: string, bio: string, cover: string, role: UserRole, suspended: boolean, followersCount: number, followingCount: number, followedByMe: boolean } };
+export type UserByUsernameQuery = { __typename: 'Query', userByUsername: { __typename: 'User', id: string, username: string, displayName: string, bio: string, cover: string, role: UserRole, suspended: boolean, followersCount: number, followingCount: number, followedByMe: boolean } };
 
 export type UserTweetsQueryVariables = Exact<{
   username: string;
@@ -98,58 +98,77 @@ export type UserTweetsQueryVariables = Exact<{
 }>;
 
 
-export type UserTweetsQuery = { userTweets: Array<{ id: string, content: string, createdAt: string, parentId: string | null, likesCount: number, likedByMe: boolean, repliesCount: number, author: { id: string, username: string, displayName: string } }> };
+export type UserTweetsQuery = { __typename: 'Query', userTweets: Array<{ __typename: 'Tweet', id: string, content: string, createdAt: string, parentId: string | null, likesCount: number, likedByMe: boolean, repliesCount: number, author: { __typename: 'User', id: string, username: string, displayName: string } }> };
 
 export type FollowUserMutationVariables = Exact<{
   input: FollowUserInput;
 }>;
 
 
-export type FollowUserMutation = { followUser: boolean };
+export type FollowUserMutation = { __typename: 'Mutation', followUser: boolean };
 
 export type UnfollowUserMutationVariables = Exact<{
   input: FollowUserInput;
 }>;
 
 
-export type UnfollowUserMutation = { unfollowUser: boolean };
+export type UnfollowUserMutation = { __typename: 'Mutation', unfollowUser: boolean };
 
 export type SuspendUserMutationVariables = Exact<{
   input: SuspendUserInput;
 }>;
 
 
-export type SuspendUserMutation = { suspendUser: { id: string, suspended: boolean } };
+export type SuspendUserMutation = { __typename: 'Mutation', suspendUser: { __typename: 'User', id: string, suspended: boolean } };
 
 export type UpdateProfileMutationVariables = Exact<{
   input: UpdateProfileInput;
 }>;
 
 
-export type UpdateProfileMutation = { updateProfile: { id: string, username: string, displayName: string, email: string, role: UserRole } };
+export type UpdateProfileMutation = { __typename: 'Mutation', updateProfile: { __typename: 'Me', id: string, username: string, displayName: string, email: string, role: UserRole } };
 
 export type FollowersQueryVariables = Exact<{
   username: string;
 }>;
 
 
-export type FollowersQuery = { followers: Array<{ id: string, username: string, displayName: string, followedByMe: boolean }> };
+export type FollowersQuery = { __typename: 'Query', followers: Array<{ __typename: 'User', id: string, username: string, displayName: string, followedByMe: boolean }> };
 
 export type FollowingQueryVariables = Exact<{
   username: string;
 }>;
 
 
-export type FollowingQuery = { following: Array<{ id: string, username: string, displayName: string, followedByMe: boolean }> };
+export type FollowingQuery = { __typename: 'Query', following: Array<{ __typename: 'User', id: string, username: string, displayName: string, followedByMe: boolean }> };
+
+export type SuggestedUsersQueryVariables = Exact<{ [key: string]: never; }>;
+
+
+export type SuggestedUsersQuery = { __typename: 'Query', suggestedUsers: Array<{ __typename: 'User', id: string, username: string, displayName: string }> };
+
+export type UserRepliesQueryVariables = Exact<{
+  username: string;
+}>;
+
+
+export type UserRepliesQuery = { __typename: 'Query', userReplies: Array<{ __typename: 'Tweet', id: string, content: string, createdAt: string, parentId: string | null, likesCount: number, likedByMe: boolean, repliesCount: number, author: { __typename: 'User', id: string, username: string, displayName: string } }> };
+
+export type LikedTweetsQueryVariables = Exact<{
+  username: string;
+}>;
+
+
+export type LikedTweetsQuery = { __typename: 'Query', likedTweets: Array<{ __typename: 'Tweet', id: string, content: string, createdAt: string, parentId: string | null, likesCount: number, likedByMe: boolean, repliesCount: number, author: { __typename: 'User', id: string, username: string, displayName: string } }> };
 
 export type SearchUsersQueryVariables = Exact<{
   query: string;
 }>;
 
 
-export type SearchUsersQuery = { searchUsers: Array<{ id: string, username: string, displayName: string }> };
+export type SearchUsersQuery = { __typename: 'Query', searchUsers: Array<{ __typename: 'User', id: string, username: string, displayName: string }> };
 
-export type TweetCardFragment = { id: string, content: string, createdAt: string, parentId: string | null, likesCount: number, likedByMe: boolean, repliesCount: number, author: { id: string, username: string, displayName: string } };
+export type TweetCardFragment = { __typename: 'Tweet', id: string, content: string, createdAt: string, parentId: string | null, likesCount: number, likedByMe: boolean, repliesCount: number, author: { __typename: 'User', id: string, username: string, displayName: string } };
 
 export type FeedQueryVariables = Exact<{
   limit?: number | null | undefined;
@@ -157,42 +176,42 @@ export type FeedQueryVariables = Exact<{
 }>;
 
 
-export type FeedQuery = { feed: Array<{ id: string, content: string, createdAt: string, parentId: string | null, likesCount: number, likedByMe: boolean, repliesCount: number, author: { id: string, username: string, displayName: string } }> };
+export type FeedQuery = { __typename: 'Query', feed: Array<{ __typename: 'Tweet', id: string, content: string, createdAt: string, parentId: string | null, likesCount: number, likedByMe: boolean, repliesCount: number, author: { __typename: 'User', id: string, username: string, displayName: string } }> };
 
 export type CreateTweetMutationVariables = Exact<{
   input: CreateTweetInput;
 }>;
 
 
-export type CreateTweetMutation = { createTweet: { id: string, content: string, createdAt: string, parentId: string | null, likesCount: number, likedByMe: boolean, repliesCount: number, author: { id: string, username: string, displayName: string } } };
+export type CreateTweetMutation = { __typename: 'Mutation', createTweet: { __typename: 'Tweet', id: string, content: string, createdAt: string, parentId: string | null, likesCount: number, likedByMe: boolean, repliesCount: number, author: { __typename: 'User', id: string, username: string, displayName: string } } };
 
 export type DeleteTweetMutationVariables = Exact<{
   input: DeleteTweetInput;
 }>;
 
 
-export type DeleteTweetMutation = { deleteTweet: boolean };
+export type DeleteTweetMutation = { __typename: 'Mutation', deleteTweet: boolean };
 
 export type ToggleLikeMutationVariables = Exact<{
   input: ToggleLikeInput;
 }>;
 
 
-export type ToggleLikeMutation = { toggleLike: { liked: boolean, likesCount: number } };
+export type ToggleLikeMutation = { __typename: 'Mutation', toggleLike: { __typename: 'ToggleLikePayload', liked: boolean, likesCount: number } };
 
 export type TweetLikesQueryVariables = Exact<{
   tweetId: string | number;
 }>;
 
 
-export type TweetLikesQuery = { tweetLikes: Array<{ id: string, username: string, displayName: string, followedByMe: boolean }> };
+export type TweetLikesQuery = { __typename: 'Query', tweetLikes: Array<{ __typename: 'User', id: string, username: string, displayName: string, followedByMe: boolean }> };
 
 export type TweetQueryVariables = Exact<{
   id: string | number;
 }>;
 
 
-export type TweetQuery = { tweet: { id: string, content: string, createdAt: string, parentId: string | null, likesCount: number, likedByMe: boolean, repliesCount: number, replies: Array<{ id: string, content: string, createdAt: string, parentId: string | null, likesCount: number, likedByMe: boolean, repliesCount: number, author: { id: string, username: string, displayName: string } }>, author: { id: string, username: string, displayName: string } } };
+export type TweetQuery = { __typename: 'Query', tweet: { __typename: 'Tweet', id: string, content: string, createdAt: string, parentId: string | null, likesCount: number, likedByMe: boolean, repliesCount: number, replies: Array<{ __typename: 'Tweet', id: string, content: string, createdAt: string, parentId: string | null, likesCount: number, likedByMe: boolean, repliesCount: number, author: { __typename: 'User', id: string, username: string, displayName: string } }>, author: { __typename: 'User', id: string, username: string, displayName: string } } };
 
 export const TweetCardFragmentDoc = {"kind":"Document","definitions":[{"kind":"FragmentDefinition","name":{"kind":"Name","value":"TweetCard"},"typeCondition":{"kind":"NamedType","name":{"kind":"Name","value":"Tweet"}},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"content"}},{"kind":"Field","name":{"kind":"Name","value":"createdAt"}},{"kind":"Field","name":{"kind":"Name","value":"parentId"}},{"kind":"Field","name":{"kind":"Name","value":"likesCount"}},{"kind":"Field","name":{"kind":"Name","value":"likedByMe"}},{"kind":"Field","name":{"kind":"Name","value":"repliesCount"}},{"kind":"Field","name":{"kind":"Name","value":"author"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"username"}},{"kind":"Field","name":{"kind":"Name","value":"displayName"}}]}}]}}]} as unknown as DocumentNode<TweetCardFragment, unknown>;
 export const SignupDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"mutation","name":{"kind":"Name","value":"Signup"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"input"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"SignupInput"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"signup"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"input"},"value":{"kind":"Variable","name":{"kind":"Name","value":"input"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"accessToken"}},{"kind":"Field","name":{"kind":"Name","value":"refreshToken"}},{"kind":"Field","name":{"kind":"Name","value":"user"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"username"}},{"kind":"Field","name":{"kind":"Name","value":"displayName"}},{"kind":"Field","name":{"kind":"Name","value":"email"}},{"kind":"Field","name":{"kind":"Name","value":"role"}}]}}]}}]}}]} as unknown as DocumentNode<SignupMutation, SignupMutationVariables>;
@@ -208,6 +227,9 @@ export const SuspendUserDocument = {"kind":"Document","definitions":[{"kind":"Op
 export const UpdateProfileDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"mutation","name":{"kind":"Name","value":"UpdateProfile"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"input"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"UpdateProfileInput"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"updateProfile"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"input"},"value":{"kind":"Variable","name":{"kind":"Name","value":"input"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"username"}},{"kind":"Field","name":{"kind":"Name","value":"displayName"}},{"kind":"Field","name":{"kind":"Name","value":"email"}},{"kind":"Field","name":{"kind":"Name","value":"role"}}]}}]}}]} as unknown as DocumentNode<UpdateProfileMutation, UpdateProfileMutationVariables>;
 export const FollowersDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"query","name":{"kind":"Name","value":"Followers"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"username"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"String"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"followers"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"username"},"value":{"kind":"Variable","name":{"kind":"Name","value":"username"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"username"}},{"kind":"Field","name":{"kind":"Name","value":"displayName"}},{"kind":"Field","name":{"kind":"Name","value":"followedByMe"}}]}}]}}]} as unknown as DocumentNode<FollowersQuery, FollowersQueryVariables>;
 export const FollowingDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"query","name":{"kind":"Name","value":"Following"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"username"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"String"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"following"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"username"},"value":{"kind":"Variable","name":{"kind":"Name","value":"username"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"username"}},{"kind":"Field","name":{"kind":"Name","value":"displayName"}},{"kind":"Field","name":{"kind":"Name","value":"followedByMe"}}]}}]}}]} as unknown as DocumentNode<FollowingQuery, FollowingQueryVariables>;
+export const SuggestedUsersDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"query","name":{"kind":"Name","value":"SuggestedUsers"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"suggestedUsers"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"limit"},"value":{"kind":"IntValue","value":"3"}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"username"}},{"kind":"Field","name":{"kind":"Name","value":"displayName"}}]}}]}}]} as unknown as DocumentNode<SuggestedUsersQuery, SuggestedUsersQueryVariables>;
+export const UserRepliesDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"query","name":{"kind":"Name","value":"UserReplies"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"username"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"String"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"userReplies"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"username"},"value":{"kind":"Variable","name":{"kind":"Name","value":"username"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"FragmentSpread","name":{"kind":"Name","value":"TweetCard"}}]}}]}},{"kind":"FragmentDefinition","name":{"kind":"Name","value":"TweetCard"},"typeCondition":{"kind":"NamedType","name":{"kind":"Name","value":"Tweet"}},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"content"}},{"kind":"Field","name":{"kind":"Name","value":"createdAt"}},{"kind":"Field","name":{"kind":"Name","value":"parentId"}},{"kind":"Field","name":{"kind":"Name","value":"likesCount"}},{"kind":"Field","name":{"kind":"Name","value":"likedByMe"}},{"kind":"Field","name":{"kind":"Name","value":"repliesCount"}},{"kind":"Field","name":{"kind":"Name","value":"author"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"username"}},{"kind":"Field","name":{"kind":"Name","value":"displayName"}}]}}]}}]} as unknown as DocumentNode<UserRepliesQuery, UserRepliesQueryVariables>;
+export const LikedTweetsDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"query","name":{"kind":"Name","value":"LikedTweets"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"username"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"String"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"likedTweets"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"username"},"value":{"kind":"Variable","name":{"kind":"Name","value":"username"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"FragmentSpread","name":{"kind":"Name","value":"TweetCard"}}]}}]}},{"kind":"FragmentDefinition","name":{"kind":"Name","value":"TweetCard"},"typeCondition":{"kind":"NamedType","name":{"kind":"Name","value":"Tweet"}},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"content"}},{"kind":"Field","name":{"kind":"Name","value":"createdAt"}},{"kind":"Field","name":{"kind":"Name","value":"parentId"}},{"kind":"Field","name":{"kind":"Name","value":"likesCount"}},{"kind":"Field","name":{"kind":"Name","value":"likedByMe"}},{"kind":"Field","name":{"kind":"Name","value":"repliesCount"}},{"kind":"Field","name":{"kind":"Name","value":"author"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"username"}},{"kind":"Field","name":{"kind":"Name","value":"displayName"}}]}}]}}]} as unknown as DocumentNode<LikedTweetsQuery, LikedTweetsQueryVariables>;
 export const SearchUsersDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"query","name":{"kind":"Name","value":"SearchUsers"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"query"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"String"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"searchUsers"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"query"},"value":{"kind":"Variable","name":{"kind":"Name","value":"query"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"username"}},{"kind":"Field","name":{"kind":"Name","value":"displayName"}}]}}]}}]} as unknown as DocumentNode<SearchUsersQuery, SearchUsersQueryVariables>;
 export const FeedDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"query","name":{"kind":"Name","value":"Feed"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"limit"}},"type":{"kind":"NamedType","name":{"kind":"Name","value":"Int"}}},{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"after"}},"type":{"kind":"NamedType","name":{"kind":"Name","value":"ID"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"feed"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"limit"},"value":{"kind":"Variable","name":{"kind":"Name","value":"limit"}}},{"kind":"Argument","name":{"kind":"Name","value":"after"},"value":{"kind":"Variable","name":{"kind":"Name","value":"after"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"FragmentSpread","name":{"kind":"Name","value":"TweetCard"}}]}}]}},{"kind":"FragmentDefinition","name":{"kind":"Name","value":"TweetCard"},"typeCondition":{"kind":"NamedType","name":{"kind":"Name","value":"Tweet"}},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"content"}},{"kind":"Field","name":{"kind":"Name","value":"createdAt"}},{"kind":"Field","name":{"kind":"Name","value":"parentId"}},{"kind":"Field","name":{"kind":"Name","value":"likesCount"}},{"kind":"Field","name":{"kind":"Name","value":"likedByMe"}},{"kind":"Field","name":{"kind":"Name","value":"repliesCount"}},{"kind":"Field","name":{"kind":"Name","value":"author"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"username"}},{"kind":"Field","name":{"kind":"Name","value":"displayName"}}]}}]}}]} as unknown as DocumentNode<FeedQuery, FeedQueryVariables>;
 export const CreateTweetDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"mutation","name":{"kind":"Name","value":"CreateTweet"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"input"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"CreateTweetInput"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"createTweet"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"input"},"value":{"kind":"Variable","name":{"kind":"Name","value":"input"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"FragmentSpread","name":{"kind":"Name","value":"TweetCard"}}]}}]}},{"kind":"FragmentDefinition","name":{"kind":"Name","value":"TweetCard"},"typeCondition":{"kind":"NamedType","name":{"kind":"Name","value":"Tweet"}},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"content"}},{"kind":"Field","name":{"kind":"Name","value":"createdAt"}},{"kind":"Field","name":{"kind":"Name","value":"parentId"}},{"kind":"Field","name":{"kind":"Name","value":"likesCount"}},{"kind":"Field","name":{"kind":"Name","value":"likedByMe"}},{"kind":"Field","name":{"kind":"Name","value":"repliesCount"}},{"kind":"Field","name":{"kind":"Name","value":"author"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"username"}},{"kind":"Field","name":{"kind":"Name","value":"displayName"}}]}}]}}]} as unknown as DocumentNode<CreateTweetMutation, CreateTweetMutationVariables>;

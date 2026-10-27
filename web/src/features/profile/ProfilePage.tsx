@@ -4,16 +4,16 @@ import { Link, useParams } from 'react-router';
 import { Avatar } from '../../components/Avatar';
 import { ConfirmDialog } from '../../components/ConfirmDialog';
 import { ErrorBox } from '../../components/ErrorBox';
-import { SuspendUserDocument, UserByUsernameDocument, UserTweetsDocument } from '../../gql/graphql';
+import { SuspendUserDocument, UserByUsernameDocument } from '../../gql/graphql';
 import { attempt } from '../../lib/attempt';
 import { useAuthStore } from '../auth/auth.store';
-import { TweetCard } from '../tweets/TweetCard';
 import { TweetSkeletons } from '../tweets/TweetSkeleton';
 import { Cover } from './Cover';
 import { toCoverId, type CoverId } from './covers';
 import { EditProfileForm } from './EditProfileForm';
-import { FollowListModal, type FollowList } from './FollowListModal';
 import { FollowButton } from './FollowButton';
+import { FollowListModal, type FollowList } from './FollowListModal';
+import { ProfileTabs } from './ProfileTabs';
 import styles from './ProfilePage.module.css';
 import shared from '../../styles/shared.module.css';
 
@@ -23,7 +23,6 @@ export function ProfilePage() {
   const { username = '' } = useParams();
 
   const profile = useQuery(UserByUsernameDocument, { variables: { username } });
-  const tweets = useQuery(UserTweetsDocument, { variables: { username } });
   const [editing, setEditing] = useState(false);
   const [confirmSuspend, setConfirmSuspend] = useState(false);
   // Lista aberta ao clicar nos números (seguidores ou seguindo).
@@ -131,17 +130,7 @@ export function ProfilePage() {
         </section>
       )}
 
-      {user && (
-        <h3 className={styles.listTitle}>
-          Pios de {user.displayName}
-        </h3>
-      )}
-      {user && tweets.loading && !tweets.data && <TweetSkeletons />}
-      <ErrorBox error={tweets.error} />
-      {tweets.data?.userTweets.length === 0 && (
-        <p className={`${shared.muted} ${styles.empty}`}>@{username} ainda não publicou nada.</p>
-      )}
-      {tweets.data?.userTweets.map((tweet) => <TweetCard key={tweet.id} tweet={tweet} />)}
+      {user && <ProfileTabs username={user.username} />}
     </section>
   );
 }

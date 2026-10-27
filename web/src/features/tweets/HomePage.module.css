@@ -1,0 +1,3 @@
+/* Dentro da home, o bloco de sugestões fica sem sombra, entre linhas. */
+.suggestions { border-bottom: 1px solid var(--line); }
+.suggestions > section { box-shadow: none; border-radius: 0; }

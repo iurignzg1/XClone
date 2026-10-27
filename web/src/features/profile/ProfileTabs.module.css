@@ -1,0 +1,13 @@
+/* Abas do perfil: texto com um traço embaixo na aba aberta. */
+.tabs { display: flex; margin-top: 12px; border-bottom: 1px solid var(--line); }
+.tab {
+  flex: 1 1 0; position: relative; padding: 12px 8px; border: none; border-radius: 0;
+  background: transparent; color: var(--muted); font-weight: 600;
+}
+.tab:hover:not(:disabled) { background: var(--hover); color: var(--ink); }
+.tab[aria-selected='true'] { color: var(--ink); }
+.tab[aria-selected='true']::after {
+  content: ''; position: absolute; left: 50%; bottom: -1px; width: 48px; height: 3px;
+  translate: -50% 0; border-radius: 3px; background: var(--ink);
+}
+.empty { padding: 24px 16px; text-align: center; margin: 0; }

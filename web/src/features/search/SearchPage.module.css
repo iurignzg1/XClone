@@ -12,6 +12,7 @@
 .field:focus-within { outline: 2px solid var(--ink); outline-offset: 0; }
 .field input { flex: 1 1 0; border: none; background: transparent; padding: 10px 0; font-size: 1rem; outline: none; }
 
+.skeleton { padding: 4px 16px; }
 .note { margin: 0; padding: 24px 16px; text-align: center; }
 .list { list-style: none; margin: 0; padding: 0; }
 /* Cada pessoa é uma linha inteira clicável, com o mesmo hover sutil dos pios. */

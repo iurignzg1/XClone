@@ -1,21 +1,16 @@
-import { useQuery } from '@apollo/client/react';
-import { Link, useParams } from 'react-router';
+import { Link, Navigate, useParams } from 'react-router';
 import { ErrorBox } from '../../components/ErrorBox';
-import { TweetDocument } from '../../gql/graphql';
 import { ComposePanel } from './ComposePanel';
 import { TweetCard } from './TweetCard';
 import { TweetSkeletons } from './TweetSkeleton';
+import { useTweet } from './useTweet';
 import styles from './TweetPage.module.css';
 import shared from '../../styles/shared.module.css';
 
 export function TweetPage() {
   // O :id da rota (/pio/:id).
   const { id = '' } = useParams();
-  const { data, loading, error } = useQuery(TweetDocument, {
-    variables: { id },
-    fetchPolicy: 'cache-and-network',
-  });
-  const tweet = data?.tweet;
+  const { tweet, loading, error } = useTweet(id);
 
   return (
     <section className={styles.page}>
@@ -23,7 +18,7 @@ export function TweetPage() {
         <Link to="/home" aria-label="Voltar para a home">←</Link>
         <h2>Pio</h2>
       </header>
-      {loading && !data && <TweetSkeletons count={1} />}
+      {loading && <TweetSkeletons count={1} />}
       <ErrorBox error={error} />
       {tweet && (
         <>
@@ -43,4 +38,11 @@ export function TweetPage() {
       )}
     </section>
   );
+}
+
+// O case pede a rota /tweet/:id; no Pio ela se chama /pio/:id. O endereço
+// antigo continua funcionando e leva ao novo.
+export function TweetRedirect() {
+  const { id = '' } = useParams();
+  return <Navigate to={`/pio/${id}`} replace />;
 }

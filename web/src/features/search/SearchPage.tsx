@@ -4,6 +4,7 @@ import { Link, useSearchParams } from 'react-router';
 import { Avatar } from '../../components/Avatar';
 import { ErrorBox } from '../../components/ErrorBox';
 import { SearchIcon } from '../../components/icons';
+import { PersonSkeletons } from '../../components/PersonSkeleton';
 import { SearchUsersDocument } from '../../gql/graphql';
 import styles from './SearchPage.module.css';
 import shared from '../../styles/shared.module.css';
@@ -54,7 +55,11 @@ export function SearchPage() {
       </header>
 
       {term === '' && <p className={`${shared.muted} ${styles.note}`}>Procure pessoas pelo @ ou pelo nome.</p>}
-      {term !== '' && loading && !data && <p className={`${shared.muted} ${styles.note}`}>Buscando…</p>}
+      {term !== '' && loading && !data && (
+        <div className={styles.skeleton}>
+          <PersonSkeletons />
+        </div>
+      )}
       <ErrorBox error={error} />
       {term !== '' && data && people.length === 0 && (
         <p className={`${shared.muted} ${styles.note}`}>Ninguém encontrado para “{term}”.</p>

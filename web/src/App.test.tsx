@@ -1,4 +1,4 @@
-import { screen, within } from '@testing-library/react';
+import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, describe, expect, it } from 'vitest';
 import {
@@ -7,6 +7,8 @@ import {
   caio,
   deleteForbiddenMock,
   feedMock,
+  likedTweetsMock,
+  createTweetMock,
   feedOfflineMock,
   followersMock,
   followingMock,
@@ -16,11 +18,15 @@ import {
   manyTweets,
   profileMock,
   searchUsersMock,
+  searchUsersSlowMock,
+  suggestedUsersMock,
+  toggleLikeErrorMock,
   toggleLikeMock,
   tweet,
   tweetDetailMock,
   tweetLikesMock,
   updateProfileMock,
+  userRepliesMock,
   userTweetsMock,
 } from './test/mocks';
 import { renderApp } from './test/renderApp';
@@ -94,17 +100,25 @@ describe('feed', () => {
     expect(screen.getByText(/@ana/)).toBeInTheDocument();
   });
 
-  it('curtir chama a mutation e o feed refeito mostra o coração cheio', async () => {
+  it('curtir é otimista: o coração enche na hora, antes de o servidor responder', async () => {
     loginAs();
-    renderApp('/home', [
-      feedMock([tweet()]),
-      toggleLikeMock('t1', 1),
-      feedMock([tweet({ likesCount: 1, likedByMe: true })]),
-    ]);
+    renderApp('/home', [feedMock([tweet()]), toggleLikeMock('t1', 1, 300)]);
 
     await userEvent.click(await screen.findByRole('button', { name: 'Curtir (0)' }));
 
-    expect(await screen.findByRole('button', { name: 'Descurtir (1)' })).toBeInTheDocument();
+    // O servidor só responde depois de 300 ms; a tela já mudou.
+    expect(screen.getByRole('button', { name: 'Descurtir (1)' })).toBeInTheDocument();
+    await screen.findByRole('button', { name: 'Descurtir (1)' });
+  });
+
+  it('se a curtida falhar no servidor, a mudança otimista é desfeita', async () => {
+    loginAs();
+    renderApp('/home', [feedMock([tweet()]), toggleLikeErrorMock('t1')]);
+
+    await userEvent.click(await screen.findByRole('button', { name: 'Curtir (0)' }));
+
+    expect(await screen.findByRole('alert')).toHaveTextContent('Pio não encontrado');
+    expect(screen.getByRole('button', { name: 'Curtir (0)' })).toBeInTheDocument();
   });
 
   it('"Quem curtiu" lista os usuários que curtiram', async () => {
@@ -470,3 +484,83 @@ describe('detalhe do pio e perfil', () => {
   });
 });
 
+describe('composer, sugestões, abas e atalhos', () => {
+  it('"Publicar" da barra lateral abre o composer em janela, que fecha ao publicar', async () => {
+    loginAs();
+    renderApp('/home', [feedMock([]), createTweetMock('pio pela janela'), feedMock([])]);
+    await screen.findByRole('heading', { name: /Feed/ });
+
+    await userEvent.click(screen.getAllByRole('button', { name: 'Publicar' })[0]);
+    const dialog = screen.getByRole('dialog', { name: 'Novo pio' });
+    await userEvent.type(within(dialog).getByRole('textbox'), 'pio pela janela');
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Publicar' }));
+
+    await waitFor(() => expect(screen.queryByRole('dialog', { name: 'Novo pio' })).not.toBeInTheDocument());
+  });
+
+  it('o composer em janela fecha com Esc', async () => {
+    loginAs();
+    renderApp('/home', [feedMock([])]);
+    await screen.findByRole('heading', { name: /Feed/ });
+
+    await userEvent.click(screen.getAllByRole('button', { name: 'Publicar' })[0]);
+    expect(screen.getByRole('dialog', { name: 'Novo pio' })).toBeInTheDocument();
+    await userEvent.keyboard('{Escape}');
+
+    expect(screen.queryByRole('dialog', { name: 'Novo pio' })).not.toBeInTheDocument();
+  });
+
+  it('a home mostra "Quem seguir" com as sugestões', async () => {
+    loginAs();
+    renderApp('/home', [feedMock([]), suggestedUsersMock([bia, caio])]);
+
+    const box = await screen.findByRole('region', { name: 'Quem seguir' });
+    expect(await within(box).findByText('Bia')).toBeInTheDocument();
+    expect(within(box).getAllByRole('button', { name: 'Seguir' })).toHaveLength(2);
+  });
+
+  it('sem sugestões, o bloco "Quem seguir" não aparece', async () => {
+    loginAs();
+    renderApp('/home', [feedMock([]), suggestedUsersMock([])]);
+    await screen.findByRole('heading', { name: /Feed/ });
+
+    await waitFor(() => expect(screen.queryByRole('region', { name: 'Quem seguir' })).not.toBeInTheDocument());
+  });
+
+  it('as abas do perfil trocam entre pios, respostas e curtidas', async () => {
+    loginAs();
+    renderApp('/bia', [
+      profileMock(bia, 'oi'),
+      userTweetsMock('bia', [tweet({ content: 'um pio da Bia' })]),
+      userRepliesMock('bia', [tweet({ id: 't9', content: 'uma resposta da Bia', parentId: 't1' })]),
+      likedTweetsMock('bia', []),
+    ]);
+
+    expect(await screen.findByText('um pio da Bia')).toBeInTheDocument();
+    expect(screen.getByRole('tab', { name: 'Pios' })).toHaveAttribute('aria-selected', 'true');
+
+    await userEvent.click(screen.getByRole('tab', { name: 'Respostas' }));
+    expect(await screen.findByText('uma resposta da Bia')).toBeInTheDocument();
+
+    // Seta para a direita passa para a próxima aba (Curtidas).
+    await userEvent.keyboard('{ArrowRight}');
+    expect(screen.getByRole('tab', { name: 'Curtidas' })).toHaveAttribute('aria-selected', 'true');
+    expect(await screen.findByText('@bia ainda não curtiu nada.')).toBeInTheDocument();
+  });
+
+  it('o endereço antigo /tweet/:id leva ao /pio/:id', async () => {
+    loginAs();
+    renderApp('/tweet/t1', [tweetDetailMock('t1')]);
+
+    expect(await screen.findByRole('heading', { name: 'Pio', level: 2 })).toBeInTheDocument();
+    expect(await screen.findByText('olá mundo')).toBeInTheDocument();
+  });
+
+  it('a pesquisa mostra o esqueleto de pessoas enquanto busca', async () => {
+    loginAs();
+    renderApp('/pesquisar?q=bi', [searchUsersSlowMock('bi', [bia])]);
+
+    expect(screen.getByRole('status', { name: 'Carregando pessoas' })).toBeInTheDocument();
+    expect(await screen.findByText('Bia')).toBeInTheDocument();
+  });
+});

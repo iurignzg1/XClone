@@ -5,11 +5,12 @@ import { Avatar } from '../../components/Avatar';
 import { ConfirmDialog } from '../../components/ConfirmDialog';
 import { ErrorBox } from '../../components/ErrorBox';
 import { HeartIcon, ReplyIcon, TrashIcon, UsersIcon } from '../../components/icons';
-import { DeleteTweetDocument, ToggleLikeDocument, type TweetCardFragment } from '../../gql/graphql';
+import { DeleteTweetDocument, type TweetCardFragment } from '../../gql/graphql';
 import { attempt } from '../../lib/attempt';
 import { timeAgo } from '../../lib/time';
 import { useAuthStore } from '../auth/auth.store';
 import { LikesModal } from './LikesModal';
+import { useToggleLike } from './useToggleLike';
 import styles from './TweetCard.module.css';
 import shared from '../../styles/shared.module.css';
 
@@ -33,7 +34,7 @@ export function TweetCard({
   const [confirmDelete, setConfirmDelete] = useState(false);
   const navigate = useNavigate();
 
-  const [toggleLike, like] = useMutation(ToggleLikeDocument, REFETCH);
+  const like = useToggleLike(tweet);
   const [deleteTweet, del] = useMutation(DeleteTweetDocument, REFETCH);
 
   // Pela matriz de permissões: o autor apaga o próprio; moderador e admin, qualquer um.
@@ -89,8 +90,7 @@ export function TweetCard({
             className={`${styles.action} ${tweet.likedByMe ? styles.liked : ''}`}
             aria-label={`${tweet.likedByMe ? 'Descurtir' : 'Curtir'} (${tweet.likesCount})`}
             aria-pressed={tweet.likedByMe}
-            disabled={like.loading}
-            onClick={() => void attempt(() => toggleLike({ variables: { input: { tweetId: tweet.id } } }))}
+            onClick={() => void attempt(like.toggle)}
           >
             <HeartIcon filled={tweet.likedByMe} />
             <span>{tweet.likesCount}</span>

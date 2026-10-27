@@ -10,8 +10,17 @@ import shared from '../../styles/shared.module.css';
 
 const MAX = 280;
 
-// Com `replyTo`, publica uma resposta a esse tweet.
-export function ComposePanel({ replyTo }: { replyTo?: string }) {
+// Com `replyTo`, publica uma resposta a esse pio. `onPublished` avisa quem
+// abriu o composer (ex.: o modal, que fecha depois de publicar).
+export function ComposePanel({
+  replyTo,
+  autoFocus = false,
+  onPublished,
+}: {
+  replyTo?: string;
+  autoFocus?: boolean;
+  onPublished?: () => void;
+}) {
   const me = useAuthStore((s) => s.user);
   const [content, setContent] = useState('');
   const [createTweet, { loading, error }] = useMutation(CreateTweetDocument, {
@@ -26,7 +35,10 @@ export function ComposePanel({ replyTo }: { replyTo?: string }) {
     const ok = await attempt(() =>
       createTweet({ variables: { input: { content, parentId: replyTo } } }),
     );
-    if (ok) setContent('');
+    if (ok) {
+      setContent('');
+      onPublished?.();
+    }
   }
 
   return (
@@ -39,6 +51,7 @@ export function ComposePanel({ replyTo }: { replyTo?: string }) {
           placeholder={replyTo ? 'Publique sua resposta' : 'O que está acontecendo?'}
           aria-label={replyTo ? 'Sua resposta' : 'Novo pio'}
           rows={2}
+          autoFocus={autoFocus}
         />
         <div className={styles.footer}>
           <span className={length > MAX ? shared.error : shared.muted}>{length}/{MAX}</span>
