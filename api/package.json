@@ -8,6 +8,8 @@
   "type": "module",
   "scripts": {
     "build": "nest build",
+    "seed": "node scripts/seed.mjs",
+    "seed:limpar": "node scripts/seed.mjs --limpar",
     "start": "nest start",
     "start:dev": "nest start --watch",
     "start:debug": "nest start --debug --watch",

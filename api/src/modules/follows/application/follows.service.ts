@@ -5,6 +5,7 @@ import {
 } from '@nestjs/common';
 import DataLoader from 'dataloader';
 import { UsersService } from '../../users/application/users.service.js';
+import type { User } from '../../users/domain/user.entity.js';
 import { FollowRepository } from '../domain/follow.repository.js';
 
 @Injectable()
@@ -28,6 +29,29 @@ export class FollowsService {
 
   getFollowingIds(userId: string): Promise<string[]> {
     return this.followRepository.findFollowingIds(userId);
+  }
+
+  // Listas de "seguidores" e "seguindo" de um perfil (pelo @), do vínculo mais
+  // recente para o mais antigo.
+  async getFollowers(username: string, limit: number): Promise<User[]> {
+    const user = await this.usersService.getByUsername(username);
+    return this.loadInOrder(
+      await this.followRepository.listFollowerIds(user.id, limit),
+    );
+  }
+
+  async getFollowing(username: string, limit: number): Promise<User[]> {
+    const user = await this.usersService.getByUsername(username);
+    return this.loadInOrder(
+      await this.followRepository.listFollowingIds(user.id, limit),
+    );
+  }
+
+  // O banco devolve os usuários em qualquer ordem: refaz a ordem dos ids.
+  private async loadInOrder(userIds: string[]): Promise<User[]> {
+    const users = await this.usersService.findByIds(userIds);
+    const byId = new Map(users.map((user) => [user.id, user]));
+    return userIds.flatMap((id) => byId.get(id) ?? []);
   }
 
   // Idempotente: deixar de seguir quem não se segue também não dá erro.

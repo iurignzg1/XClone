@@ -30,6 +30,26 @@ export class MongoFollowRepository extends FollowRepository {
     return docs.map((doc) => doc.followingId.toString());
   }
 
+  // O _id do vínculo nasce com a data em que ele foi criado: ordenar por ele
+  // dá do mais recente para o mais antigo.
+  async listFollowerIds(userId: string, limit: number): Promise<string[]> {
+    const docs = await this.followModel
+      .find({ followingId: userId })
+      .sort({ _id: -1 })
+      .limit(limit)
+      .select('followerId');
+    return docs.map((doc) => doc.followerId.toString());
+  }
+
+  async listFollowingIds(userId: string, limit: number): Promise<string[]> {
+    const docs = await this.followModel
+      .find({ followerId: userId })
+      .sort({ _id: -1 })
+      .limit(limit)
+      .select('followingId');
+    return docs.map((doc) => doc.followingId.toString());
+  }
+
   async findFollowedIds(
     followerId: string,
     userIds: string[],

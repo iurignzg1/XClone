@@ -20,6 +20,27 @@ export class InMemoryFollowRepository extends FollowRepository {
     );
   }
 
+  // Ordem de inserção do Set = ordem dos vínculos (o mais recente é o último).
+  listFollowerIds(userId: string, limit: number): Promise<string[]> {
+    return Promise.resolve(
+      [...this.follows]
+        .filter((key) => key.endsWith(`:${userId}`))
+        .map((key) => key.split(':')[0])
+        .reverse()
+        .slice(0, limit),
+    );
+  }
+
+  listFollowingIds(userId: string, limit: number): Promise<string[]> {
+    return Promise.resolve(
+      [...this.follows]
+        .filter((key) => key.startsWith(`${userId}:`))
+        .map((key) => key.split(':')[1])
+        .reverse()
+        .slice(0, limit),
+    );
+  }
+
   remove(followerId: string, followingId: string): Promise<boolean> {
     return Promise.resolve(this.follows.delete(`${followerId}:${followingId}`));
   }

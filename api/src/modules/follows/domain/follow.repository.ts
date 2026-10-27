@@ -3,6 +3,10 @@ export abstract class FollowRepository {
   abstract add(followerId: string, followingId: string): Promise<boolean>;
   // Ids dos usuários que `followerId` segue.
   abstract findFollowingIds(followerId: string): Promise<string[]>;
+  // Listas para mostrar na tela, do vínculo mais recente para o mais antigo:
+  // quem segue `userId` e quem `userId` segue.
+  abstract listFollowerIds(userId: string, limit: number): Promise<string[]>;
+  abstract listFollowingIds(userId: string, limit: number): Promise<string[]>;
   // Entre os usuários informados, quais `followerId` segue (uma consulta só).
   abstract findFollowedIds(
     followerId: string,

@@ -4,6 +4,7 @@ import {
   Int,
   Mutation,
   Parent,
+  Query,
   ResolveField,
   Resolver,
 } from '@nestjs/graphql';
@@ -12,6 +13,7 @@ import { CurrentUser } from '../../../common/decorators/current-user.decorator.j
 import type { User } from '../../users/domain/user.entity.js';
 import { UserType } from '../../users/presentation/types/user.type.js';
 import { FollowsService } from '../application/follows.service.js';
+import { FollowListArgs } from './dto/follow-list.args.js';
 import { FollowUserInput } from './dto/follow-user.input.js';
 
 // O contexto do GraphQL vive uma requisição inteira: é onde guardamos os loaders.
@@ -58,6 +60,18 @@ export class FollowsResolver {
     context.followingCountLoader ??=
       this.followsService.createFollowingCountLoader();
     return context.followingCountLoader.load(user.id);
+  }
+
+  // Quem segue o perfil (aba "seguidores").
+  @Query(() => [UserType])
+  followers(@Args() args: FollowListArgs): Promise<User[]> {
+    return this.followsService.getFollowers(args.username, args.limit);
+  }
+
+  // Quem o perfil segue (aba "seguindo").
+  @Query(() => [UserType])
+  following(@Args() args: FollowListArgs): Promise<User[]> {
+    return this.followsService.getFollowing(args.username, args.limit);
   }
 
   @Mutation(() => Boolean)
