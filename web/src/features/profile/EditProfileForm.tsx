@@ -4,22 +4,33 @@ import { ErrorBox } from '../../components/ErrorBox';
 import { UpdateProfileDocument } from '../../gql/graphql';
 import { attempt } from '../../lib/attempt';
 import { useAuthStore } from '../auth/auth.store';
+import { Cover } from './Cover';
+import { COVERS, type CoverId } from './covers';
 import styles from './ProfilePage.module.css';
 import shared from '../../styles/shared.module.css';
 
 const BIO_MAX = 160;
 
-// Edita o nome de exibição e a bio de quem está logado. Ao salvar, atualiza o
-// nome na sessão (barra lateral) e refaz as queries da tela (perfil, feed...).
+// Edita o nome de exibição, a bio e a capa de quem está logado. Ao salvar,
+// atualiza o nome na sessão (barra lateral) e refaz as queries da tela.
+// `onPreviewCover` avisa o perfil da capa escolhida, para ele já mostrá-la.
 export function EditProfileForm({
   current,
   onDone,
+  onPreviewCover,
 }: {
-  current: { displayName: string; bio: string };
+  current: { displayName: string; bio: string; cover: CoverId };
   onDone: () => void;
+  onPreviewCover?: (cover: CoverId) => void;
 }) {
   const [name, setName] = useState(current.displayName);
   const [bio, setBio] = useState(current.bio);
+  const [cover, setCover] = useState<CoverId>(current.cover);
+
+  function chooseCover(next: CoverId) {
+    setCover(next);
+    onPreviewCover?.(next);
+  }
   const [updateProfile, { loading, error }] = useMutation(UpdateProfileDocument, {
     refetchQueries: 'active',
   });
@@ -29,7 +40,7 @@ export function EditProfileForm({
   async function onSubmit(event: FormEvent) {
     event.preventDefault();
     const ok = await attempt(async () => {
-      const { data } = await updateProfile({ variables: { input: { displayName: name, bio } } });
+      const { data } = await updateProfile({ variables: { input: { displayName: name, bio, cover } } });
       if (data) useAuthStore.getState().updateUser({ displayName: data.updateProfile.displayName });
     });
     if (ok) onDone();
@@ -53,6 +64,24 @@ export function EditProfileForm({
           {bioLength}/{BIO_MAX}
         </span>
       </label>
+      <fieldset className={styles.coverPicker}>
+        <legend>Capa</legend>
+        <div className={styles.coverGrid}>
+          {COVERS.map((option) => (
+            <label key={option.id} className={styles.coverOption}>
+              <input
+                type="radio"
+                name="cover"
+                value={option.id}
+                checked={cover === option.id}
+                onChange={() => chooseCover(option.id)}
+              />
+              <Cover id={option.id} className={styles.coverThumb} />
+              <span>{option.label}</span>
+            </label>
+          ))}
+        </div>
+      </fieldset>
       <div className={styles.editButtons}>
         <button className={shared.primary} disabled={loading || name.trim() === '' || bioLength > BIO_MAX}>
           {loading ? 'Salvando…' : 'Salvar'}

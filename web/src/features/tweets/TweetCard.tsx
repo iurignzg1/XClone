@@ -2,6 +2,7 @@ import { useMutation } from '@apollo/client/react';
 import { useState, type MouseEvent } from 'react';
 import { Link, useNavigate } from 'react-router';
 import { Avatar } from '../../components/Avatar';
+import { ConfirmDialog } from '../../components/ConfirmDialog';
 import { ErrorBox } from '../../components/ErrorBox';
 import { HeartIcon, ReplyIcon, TrashIcon, UsersIcon } from '../../components/icons';
 import { DeleteTweetDocument, ToggleLikeDocument, type TweetCardFragment } from '../../gql/graphql';
@@ -16,10 +17,20 @@ import shared from '../../styles/shared.module.css';
 // mudança aparece sem eu listar quais telas mostram o tweet.
 const REFETCH = { refetchQueries: 'active' } as const;
 
-// `featured` é o tweet em destaque do detalhe: texto maior e data completa.
-export function TweetCard({ tweet, featured = false }: { tweet: TweetCardFragment; featured?: boolean }) {
+// `featured` é o pio em destaque do detalhe: texto maior e data completa.
+// `showReplyContext` mostra o "Em resposta a" (escondido nas respostas do detalhe).
+export function TweetCard({
+  tweet,
+  featured = false,
+  showReplyContext = true,
+}: {
+  tweet: TweetCardFragment;
+  featured?: boolean;
+  showReplyContext?: boolean;
+}) {
   const me = useAuthStore((s) => s.user);
   const [showLikes, setShowLikes] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState(false);
   const navigate = useNavigate();
 
   const [toggleLike, like] = useMutation(ToggleLikeDocument, REFETCH);
@@ -58,7 +69,7 @@ export function TweetCard({ tweet, featured = false }: { tweet: TweetCardFragmen
             </time>
           </Link>
         </header>
-        {tweet.parentId && (
+        {tweet.parentId && showReplyContext && (
           <p className={shared.muted}>
             Em resposta a <Link to={`/pio/${tweet.parentId}`}>outro pio</Link>
           </p>
@@ -93,7 +104,7 @@ export function TweetCard({ tweet, featured = false }: { tweet: TweetCardFragmen
               className={`${styles.action} ${styles.delete}`}
               aria-label="Apagar"
               disabled={del.loading}
-              onClick={() => void attempt(() => deleteTweet({ variables: { input: { tweetId: tweet.id } } }))}
+              onClick={() => setConfirmDelete(true)}
             >
               <TrashIcon />
               <span className={styles.label}>Apagar</span>
@@ -102,6 +113,19 @@ export function TweetCard({ tweet, featured = false }: { tweet: TweetCardFragmen
         </div>
         <ErrorBox error={error} />
       </div>
+      {confirmDelete && (
+        <ConfirmDialog
+          title="Apagar pio?"
+          confirmLabel="Apagar"
+          onCancel={() => setConfirmDelete(false)}
+          onConfirm={() => {
+            setConfirmDelete(false);
+            void attempt(() => deleteTweet({ variables: { input: { tweetId: tweet.id } } }));
+          }}
+        >
+          Ele some do perfil e do feed, junto com as curtidas. Não dá para desfazer.
+        </ConfirmDialog>
+      )}
       {showLikes && <LikesModal tweetId={tweet.id} onClose={() => setShowLikes(false)} />}
     </article>
   );

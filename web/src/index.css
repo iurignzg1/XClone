@@ -3,13 +3,24 @@
    NomeDoComponente.module.css (CSS Modules: as classes valem só para ele).
    O que vários componentes usam fica em styles/shared.module.css. */
 :root {
-  --bg: #f6f6f8;
+  /* Preto e branco: o destaque (--accent) é a própria cor do texto. A única cor
+     da interface é o vermelho de erro; cor de verdade só nas capas de perfil.
+     O fundo é um pouco mais escuro que as superfícies, para o conteúdo se
+     destacar com nitidez. */
+  --bg: #efeff1;
   --surface: #ffffff;
-  --ink: #1b1b22;
-  --muted: #6a6a78;
-  --line: #dcdce3;
-  --accent: #1d6fe0;
+  --ink: #111113;
+  --muted: #66666e;
+  --line: #dcdce0;
+  --accent: var(--ink);
   --error: #b3261e;
+  /* Granulação por cima de tudo (só no escuro): dá o acabamento fosco. */
+  --grain: 0;
+  /* Cantos de tudo que é clicável (botões, itens de menu, ações, campos):
+     discretos e iguais em todo o app. */
+  --radius: 8px;
+  /* Cantos dos containers (coluna central, janelas, menus, cartões). */
+  --radius-lg: 12px;
   /* Fundo sutil para hover e áreas de destaque: um toque da cor do texto. */
   --hover: color-mix(in srgb, var(--ink) 7%, transparent);
   font: 16px/1.5 system-ui, 'Segoe UI', Roboto, sans-serif;
@@ -18,9 +29,10 @@
 /* Tema: sem escolha do usuário, vale o do sistema (prefers-color-scheme); com
    escolha, o atributo data-theme na página (ver features/ui/ui.store.ts) manda. */
 @media (prefers-color-scheme: dark) {
-  :root:not([data-theme='light']) { --bg: #14141a; --surface: #1d1d26; --ink: #ececf2; --muted: #a0a0b0; --line: #2d2d3a; --accent: #6aa5ff; --error: #ff8a80; color-scheme: dark; }
+  /* Escuro fosco: carvão quase preto, sem brilho. */
+  :root:not([data-theme='light']) { --bg: #0d0d0f; --surface: #161618; --ink: #ececee; --muted: #8e8e96; --line: #29292d; --accent: var(--ink); --error: #ff8a80; --grain: 0.05; color-scheme: dark; }
 }
-:root[data-theme='dark'] { --bg: #14141a; --surface: #1d1d26; --ink: #ececf2; --muted: #a0a0b0; --line: #2d2d3a; --accent: #6aa5ff; --error: #ff8a80; color-scheme: dark; }
+:root[data-theme='dark'] { --bg: #0d0d0f; --surface: #161618; --ink: #ececee; --muted: #8e8e96; --line: #29292d; --accent: var(--ink); --error: #ff8a80; --grain: 0.05; color-scheme: dark; }
 :root[data-theme='light'] { color-scheme: light; }
 
 * { box-sizing: border-box; }
@@ -37,7 +49,7 @@ section { display: flex; flex-direction: column; gap: 12px; }
 form { display: flex; flex-direction: column; gap: 8px; }
 code { font-family: ui-monospace, Consolas, monospace; font-size: 0.85em; overflow-wrap: anywhere; }
 
-input, textarea, button { font: inherit; padding: 8px 10px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); color: var(--ink); min-width: 0; }
+input, textarea, button { font: inherit; padding: 8px 10px; border: 1px solid var(--line); border-radius: var(--radius); background: var(--surface); color: var(--ink); min-width: 0; }
 button { cursor: pointer; text-align: center; }
 button:hover:not(:disabled) { border-color: var(--accent); }
 button:disabled { opacity: 0.6; cursor: default; }
@@ -47,5 +59,14 @@ button:disabled { opacity: 0.6; cursor: default; }
   input, textarea, button { min-height: 44px; }
 }
 
-a { color: var(--accent); text-decoration: none; }
+/* Links em preto e branco: mesma cor do texto. Os que ficam no meio de uma
+   frase ganham sublinhado onde são usados (ex.: "Criar conta"). */
+a { color: var(--ink); text-decoration: none; }
 a:hover { text-decoration: underline; }
+
+/* Granulação fosca: ruído em escala de cinza, fixo sobre a página e sem pegar
+   cliques. A intensidade vem de --grain (0 no tema claro). */
+body::after {
+  content: ''; position: fixed; inset: 0; z-index: 100; pointer-events: none; opacity: var(--grain);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}

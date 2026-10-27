@@ -1,14 +1,16 @@
 import { useMutation, useQuery } from '@apollo/client/react';
-import { useState, type CSSProperties } from 'react';
+import { useState } from 'react';
 import { Link, useParams } from 'react-router';
 import { Avatar } from '../../components/Avatar';
+import { ConfirmDialog } from '../../components/ConfirmDialog';
 import { ErrorBox } from '../../components/ErrorBox';
 import { SuspendUserDocument, UserByUsernameDocument, UserTweetsDocument } from '../../gql/graphql';
 import { attempt } from '../../lib/attempt';
-import { hueOf } from '../../lib/hue';
 import { useAuthStore } from '../auth/auth.store';
 import { TweetCard } from '../tweets/TweetCard';
 import { TweetSkeletons } from '../tweets/TweetSkeleton';
+import { Cover } from './Cover';
+import { toCoverId, type CoverId } from './covers';
 import { EditProfileForm } from './EditProfileForm';
 import { FollowButton } from './FollowButton';
 import styles from './ProfilePage.module.css';
@@ -22,13 +24,16 @@ export function ProfilePage() {
   const profile = useQuery(UserByUsernameDocument, { variables: { username } });
   const tweets = useQuery(UserTweetsDocument, { variables: { username } });
   const [editing, setEditing] = useState(false);
+  const [confirmSuspend, setConfirmSuspend] = useState(false);
+  // Capa escolhida no formulário, ainda não salva: aparece no topo como prévia.
+  const [previewCover, setPreviewCover] = useState<CoverId | null>(null);
   const [suspend, suspendState] = useMutation(SuspendUserDocument, { refetchQueries: 'active' });
 
   const user = profile.data?.userByUsername;
   const isMe = user?.id === me?.id;
 
   return (
-    <section>
+    <section className={styles.page}>
       <header className={shared.pageTitle}>
         <Link to="/home" aria-label="Voltar para a home">←</Link>
         <h2>{user ? user.displayName : 'Perfil'}</h2>
@@ -37,16 +42,23 @@ export function ProfilePage() {
       <ErrorBox error={profile.error} />
 
       {user && (
-        <section className={styles.card} style={{ '--hue': hueOf(user.username) } as CSSProperties}>
+        <section className={styles.card}>
+          <Cover id={editing && previewCover ? previewCover : toCoverId(user.cover)} className={styles.coverBand} />
           {editing ? (
             <EditProfileForm
-              current={{ displayName: user.displayName, bio: user.bio }}
-              onDone={() => setEditing(false)}
+              current={{ displayName: user.displayName, bio: user.bio, cover: toCoverId(user.cover) }}
+              onPreviewCover={setPreviewCover}
+              onDone={() => {
+                setEditing(false);
+                setPreviewCover(null);
+              }}
             />
           ) : (
             <>
               <div className={styles.identity}>
-                <Avatar username={user.username} displayName={user.displayName} size={72} />
+                <span className={styles.avatarRing}>
+                  <Avatar username={user.username} displayName={user.displayName} size={88} />
+                </span>
                 <div className={styles.names}>
                   <div className={styles.head}>
                     <h3 className={styles.name}>{user.displayName}</h3>
@@ -82,7 +94,7 @@ export function ProfilePage() {
                 <button
                   className={`${shared.outline} ${shared.danger}`}
                   disabled={suspendState.loading}
-                  onClick={() => void attempt(() => suspend({ variables: { input: { userId: user.id } } }))}
+                  onClick={() => setConfirmSuspend(true)}
                 >
                   Suspender conta
                 </button>
@@ -90,11 +102,24 @@ export function ProfilePage() {
             </div>
           )}
           <ErrorBox error={suspendState.error} />
+          {confirmSuspend && (
+            <ConfirmDialog
+              title={`Suspender @${user.username}?`}
+              confirmLabel="Suspender"
+              onCancel={() => setConfirmSuspend(false)}
+              onConfirm={() => {
+                setConfirmSuspend(false);
+                void attempt(() => suspend({ variables: { input: { userId: user.id } } }));
+              }}
+            >
+              A pessoa perde o acesso na hora e não consegue mais entrar.
+            </ConfirmDialog>
+          )}
         </section>
       )}
 
       {user && (
-        <h3 className={styles.listTitle} style={{ '--hue': hueOf(user.username) } as CSSProperties}>
+        <h3 className={styles.listTitle}>
           Pios de {user.displayName}
         </h3>
       )}

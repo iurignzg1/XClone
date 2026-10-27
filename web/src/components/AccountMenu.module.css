@@ -1,0 +1,32 @@
+/* Conta sem cartão: só a linha com avatar, nome e o ícone de sair. */
+.account { position: relative; display: flex; align-items: center; gap: 6px; }
+/* A linha da conta é o link para o próprio perfil. */
+.profile { flex: 1 1 0; min-width: 0; display: flex; align-items: center; gap: 10px; padding: 8px; border-radius: var(--radius); color: var(--ink); }
+.profile:hover { background: var(--hover); text-decoration: none; }
+.profile:global(.active) { background: var(--hover); }
+.who { display: flex; flex-direction: column; min-width: 0; flex: 1 1 0; line-height: 1.3; }
+.who strong, .who span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+.trigger {
+  flex: none; width: 36px; height: 36px; padding: 0; display: inline-flex; align-items: center; justify-content: center;
+  border: none; border-radius: var(--radius); background: transparent; color: var(--muted);
+}
+.trigger:hover:not(:disabled), .trigger[aria-expanded='true'] { background: var(--hover); color: var(--ink); }
+@media (pointer: coarse) { .trigger { width: 44px; height: 44px; } }
+
+/* Menu flutuante: abre para cima (a conta fica no fim da barra) ... */
+.menu {
+  position: absolute; left: 0; bottom: calc(100% + 6px); z-index: 5;
+  display: flex; flex-direction: column; padding: 6px;
+  /* A borda fina separa o menu do conteúdo no tema escuro, onde a sombra some. */
+  background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius-lg);
+  box-shadow: 0 6px 24px rgb(0 0 0 / 0.18);
+}
+.menu button { border: none; border-radius: var(--radius); background: transparent; text-align: left; padding: 9px 12px; white-space: nowrap; }
+.menu button:hover, .menu button:focus-visible { background: var(--hover); }
+.menu button:last-child { color: var(--error); }
+
+/* ... e para baixo no celular, onde a conta fica no topo da página. */
+@media (max-width: 799px) {
+  .menu { left: auto; right: 0; bottom: auto; top: calc(100% + 6px); }
+}

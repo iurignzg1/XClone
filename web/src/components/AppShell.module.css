@@ -13,20 +13,15 @@
 
 .nav { display: flex; flex-wrap: wrap; gap: 4px; }
 .item {
-  display: inline-flex; align-items: center; gap: 12px; padding: 10px 16px; border-radius: 999px;
+  display: inline-flex; align-items: center; gap: 12px; padding: 10px 16px; border-radius: var(--radius);
   color: var(--ink); font-size: 1.05rem;
 }
 .item:hover { background: var(--hover); text-decoration: none; }
 /* NavLink põe a classe "active" na página atual. */
 .item:global(.active) { font-weight: 700; background: var(--hover); }
 
-.account { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; padding: 12px; background: var(--surface); border-radius: 16px; box-shadow: 0 1px 3px rgb(0 0 0 / 0.08); }
-.who { display: flex; flex-direction: column; min-width: 0; flex: 1 1 8rem; }
-.who strong, .who span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.exit { display: flex; flex-wrap: wrap; gap: 6px; flex-basis: 100%; }
-.exit button { flex: 1 1 auto; padding: 4px 12px; font-size: 0.85rem; }
 
-.main { min-width: 0; background: var(--surface); border-radius: 20px; box-shadow: 0 1px 3px rgb(0 0 0 / 0.08); overflow: clip; display: flex; flex-direction: column; }
+.main { min-width: 0; background: var(--surface); border-radius: var(--radius-lg); box-shadow: 0 1px 3px rgb(0 0 0 / 0.08); overflow: clip; display: flex; flex-direction: column; }
 
 @media (min-width: 800px) {
   .layout {
@@ -36,7 +31,7 @@
   }
   /* A barra ocupa a altura da janela, então a conta (margin-top: auto) vai para o fundo. */
   .sidebar { position: sticky; top: 20px; height: calc(100dvh - 40px); width: 230px; justify-self: start; }
-  .account { margin-top: auto; }
+  /* A conta (AccountMenu) é o último item: margin-top: auto a empurra para o fundo. */
+  .sidebar > :last-child { margin-top: auto; }
   .nav { flex-direction: column; }
-  .exit { flex-direction: column; }
 }

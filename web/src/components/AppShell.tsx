@@ -1,13 +1,11 @@
 import type { ReactNode } from 'react';
 import { NavLink, Outlet } from 'react-router';
 import { useAuthStore } from '../features/auth/auth.store';
-import { useLogout } from '../features/auth/useLogout';
 import { ThemeToggle } from '../features/ui/ThemeToggle';
-import { Avatar } from './Avatar';
-import { HomeIcon, ShieldIcon, UserIcon } from './icons';
+import { AccountMenu } from './AccountMenu';
+import { HomeIcon, SearchIcon, ShieldIcon } from './icons';
 import { Logo } from './Logo';
 import styles from './AppShell.module.css';
-import shared from '../styles/shared.module.css';
 
 function Item({ to, icon, children }: { to: string; icon: ReactNode; children: ReactNode }) {
   return (
@@ -22,7 +20,6 @@ function Item({ to, icon, children }: { to: string; icon: ReactNode; children: R
 // coluna central com o conteúdo da rota.
 export function AppShell() {
   const user = useAuthStore((s) => s.user);
-  const { endSession, loading } = useLogout();
 
   return (
     <div className={styles.layout}>
@@ -34,29 +31,10 @@ export function AppShell() {
         </div>
         <nav className={styles.nav} aria-label="Principal">
           <Item to="/home" icon={<HomeIcon />}>Home</Item>
-          {user && <Item to={`/${user.username}`} icon={<UserIcon />}>Meu perfil</Item>}
+          <Item to="/pesquisar" icon={<SearchIcon />}>Pesquisar</Item>
           {user?.role === 'ADMIN' && <Item to="/admin" icon={<ShieldIcon />}>Admin</Item>}
         </nav>
-        {user && (
-          <div className={styles.account}>
-            <Avatar username={user.username} displayName={user.displayName} />
-            <div className={styles.who}>
-              <strong>{user.displayName}</strong>
-              <span className={shared.muted}>
-                @{user.username}
-                {user.role !== 'USER' && ` · ${user.role}`}
-              </span>
-            </div>
-            <div className={styles.exit}>
-              <button className={shared.outline} onClick={() => void endSession(false)} disabled={loading}>
-                Sair
-              </button>
-              <button className={shared.outline} onClick={() => void endSession(true)} disabled={loading}>
-                Sair de todos os aparelhos
-              </button>
-            </div>
-          </div>
-        )}
+        {user && <AccountMenu user={user} />}
       </aside>
       <main className={styles.main}>
         <Outlet />

@@ -1,6 +1,9 @@
 .card { display: flex; gap: 12px; padding: 14px 16px; border-bottom: 1px solid var(--line); }
-.card:hover { background: var(--hover); }
+.card { transition: background-color 0.15s ease; }
+/* Hover sutil só nos cartões clicáveis (o pio em destaque do detalhe não muda). */
 .clickable { cursor: pointer; }
+.clickable:hover { background: color-mix(in srgb, var(--ink) 4%, transparent); }
+@media (prefers-reduced-motion: reduce) { .card { transition: none; } }
 .body { flex: 1 1 0; min-width: 0; display: flex; flex-direction: column; gap: 4px; }
 .body p { margin: 0; }
 
@@ -16,11 +19,11 @@
 .actions { display: flex; flex-wrap: wrap; gap: 4px; margin: 4px 0 0 -10px; }
 /* Ações: botões sem borda, com ícone e texto, que ganham cor ao passar o mouse. */
 .action {
-  display: inline-flex; align-items: center; gap: 6px; padding: 6px 10px; border: none; border-radius: 999px;
+  display: inline-flex; align-items: center; gap: 6px; padding: 6px 10px; border: none; border-radius: var(--radius);
   background: transparent; color: var(--muted); font-size: 0.9rem; cursor: pointer;
 }
 .action:hover:not(:disabled) { background: var(--hover); color: var(--ink); text-decoration: none; }
-.liked, .liked:hover:not(:disabled) { color: #e0245e; }
+.liked, .liked:hover:not(:disabled) { color: var(--ink); }
 .delete:hover:not(:disabled) { color: var(--error); }
 
 /* No celular só os ícones (e o número de curtidas), para caber na linha. */

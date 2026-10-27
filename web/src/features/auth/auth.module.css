@@ -6,3 +6,4 @@
 .hint { color: var(--muted); font-size: 0.8rem; font-weight: 400; }
 .submit { padding: 10px 16px; }
 .switch { margin: 0; text-align: center; }
+.switch a { font-weight: 600; text-decoration: underline; text-underline-offset: 3px; }

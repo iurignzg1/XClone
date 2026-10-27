@@ -1,4 +1,4 @@
-import { screen } from '@testing-library/react';
+import { screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, describe, expect, it } from 'vitest';
 import {
@@ -13,6 +13,7 @@ import {
   logout,
   manyTweets,
   profileMock,
+  searchUsersMock,
   toggleLikeMock,
   tweet,
   tweetDetailMock,
@@ -120,6 +121,8 @@ describe('feed', () => {
     renderApp('/home', [feedMock([tweet({ author: { __typename: 'User', ...ana } })]), deleteForbiddenMock('t1')]);
 
     await userEvent.click(await screen.findByRole('button', { name: 'Apagar' }));
+    const dialog = screen.getByRole('alertdialog', { name: 'Apagar pio?' });
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Apagar' }));
 
     expect(await screen.findByRole('alert')).toHaveTextContent(
       'FORBIDDEN: Você só pode apagar os seus próprios pios',
@@ -208,6 +211,117 @@ describe('feed', () => {
   });
 });
 
+describe('barra lateral: pesquisa e perfil', () => {
+  it('clicar na própria conta abre o seu perfil', async () => {
+    loginAs();
+    renderApp('/home', [feedMock([]), profileMock(ana, 'minha bio'), userTweetsMock('ana', [])]);
+    await screen.findByRole('heading', { name: /Feed/ });
+
+    await userEvent.click(screen.getByRole('link', { name: /Ana\s*@ana/ }));
+
+    expect(await screen.findByText('minha bio')).toBeInTheDocument();
+  });
+
+  it('"Pesquisar" abre a página de pesquisa; o resultado leva ao perfil', async () => {
+    loginAs();
+    renderApp('/home', [
+      feedMock([]),
+      searchUsersMock('bi', [bia]),
+      profileMock(bia, 'oi, sou a Bia'),
+      userTweetsMock('bia', []),
+    ]);
+    await screen.findByRole('heading', { name: /Feed/ });
+
+    await userEvent.click(screen.getByRole('link', { name: 'Pesquisar' }));
+    expect(screen.getByText('Procure pessoas pelo @ ou pelo nome.')).toBeInTheDocument();
+    await userEvent.type(screen.getByRole('searchbox', { name: 'Pesquisar pessoas' }), 'bi');
+    await userEvent.click(await screen.findByRole('link', { name: /Bia\s*@bia/ }));
+
+    expect(await screen.findByText('oi, sou a Bia')).toBeInTheDocument();
+  });
+
+  it('o termo vem do endereço: /pesquisar?q=... já mostra o resultado', async () => {
+    loginAs();
+    renderApp('/pesquisar?q=zzz', [searchUsersMock('zzz', [])]);
+
+    expect(screen.getByRole('searchbox', { name: 'Pesquisar pessoas' })).toHaveValue('zzz');
+    expect(await screen.findByText('Ninguém encontrado para “zzz”.')).toBeInTheDocument();
+  });
+});
+
+describe('confirmação de ações sérias', () => {
+  it('apagar um pio pede confirmação; Cancelar fecha sem apagar', async () => {
+    loginAs();
+    // Sem mock da mutation: se ela fosse chamada, apareceria um erro na tela.
+    renderApp('/home', [feedMock([tweet({ author: { __typename: 'User', ...ana } })])]);
+
+    await userEvent.click(await screen.findByRole('button', { name: 'Apagar' }));
+    const dialog = screen.getByRole('alertdialog', { name: 'Apagar pio?' });
+    expect(within(dialog).getByRole('button', { name: 'Cancelar' })).toHaveFocus();
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Cancelar' }));
+
+    expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument();
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+    expect(screen.getByText('olá mundo')).toBeInTheDocument();
+  });
+
+  it('Esc também cancela a confirmação', async () => {
+    loginAs();
+    renderApp('/home', [feedMock([tweet({ author: { __typename: 'User', ...ana } })])]);
+
+    await userEvent.click(await screen.findByRole('button', { name: 'Apagar' }));
+    await userEvent.keyboard('{Escape}');
+
+    expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument();
+  });
+
+  it('Sair pede confirmação: cancelar mantém a sessão, confirmar volta para o login', async () => {
+    loginAs();
+    renderApp('/home', [feedMock([])]);
+    await screen.findByRole('heading', { name: /Feed/ });
+
+    await userEvent.click(screen.getByRole('button', { name: 'Sair da conta' }));
+    await userEvent.click(screen.getByRole('menuitem', { name: 'Sair' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Cancelar' }));
+    expect(screen.getByRole('heading', { name: /Feed/ })).toBeInTheDocument();
+
+    await userEvent.click(screen.getByRole('button', { name: 'Sair da conta' }));
+    await userEvent.click(screen.getByRole('menuitem', { name: 'Sair' }));
+    const dialog = screen.getByRole('alertdialog', { name: 'Sair do Pio?' });
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Sair' }));
+
+    expect(await screen.findByRole('heading', { name: 'Entrar' })).toBeInTheDocument();
+  });
+
+  it('o menu de sair abre no ícone e fecha com Esc, devolvendo o foco', async () => {
+    loginAs();
+    renderApp('/home', [feedMock([])]);
+    await screen.findByRole('heading', { name: /Feed/ });
+    const trigger = screen.getByRole('button', { name: 'Sair da conta' });
+
+    await userEvent.click(trigger);
+    expect(screen.getByRole('menu')).toBeInTheDocument();
+    expect(screen.getByRole('menuitem', { name: 'Sair' })).toHaveFocus();
+    await userEvent.keyboard('{Escape}');
+
+    expect(screen.queryByRole('menu')).not.toBeInTheDocument();
+    expect(trigger).toHaveFocus();
+  });
+
+  it('"Sair de todos os aparelhos" explica que encerra as outras sessões', async () => {
+    loginAs();
+    renderApp('/home', [feedMock([])]);
+    await screen.findByRole('heading', { name: /Feed/ });
+
+    await userEvent.click(screen.getByRole('button', { name: 'Sair da conta' }));
+    await userEvent.click(screen.getByRole('menuitem', { name: 'Sair de todos os aparelhos' }));
+
+    expect(screen.getByRole('alertdialog', { name: 'Sair de todos os aparelhos?' })).toHaveTextContent(
+      /outros celulares e computadores/,
+    );
+  });
+});
+
 describe('detalhe do pio e perfil', () => {
   it('o detalhe do pio mostra o pio e as respostas', async () => {
     loginAs();
@@ -287,6 +401,28 @@ describe('detalhe do pio e perfil', () => {
 
     expect(screen.queryByLabelText('Nome de exibição')).not.toBeInTheDocument();
     expect(screen.getByText('oi')).toBeInTheDocument();
+  });
+
+  it('escolher uma capa mostra a prévia e envia a capa ao salvar', async () => {
+    loginAs();
+    renderApp('/ana', [
+      profileMock(ana, 'oi'),
+      userTweetsMock('ana', []),
+      updateProfileMock('Ana', 'oi', 'sol'),
+      profileMock(ana, 'oi'),
+      userTweetsMock('ana', []),
+    ]);
+
+    await userEvent.click(await screen.findByRole('button', { name: 'Editar perfil' }));
+    expect(screen.getByRole('radio', { name: 'Grafite' })).toBeChecked();
+    expect(screen.getAllByRole('radio')).toHaveLength(10);
+    await userEvent.click(screen.getByRole('radio', { name: 'Pôr do sol' }));
+    expect(screen.getByRole('radio', { name: 'Pôr do sol' })).toBeChecked();
+    await userEvent.click(screen.getByRole('button', { name: 'Salvar' }));
+
+    // O mock da mutation só responde se a capa enviada for 'sol'.
+    expect(await screen.findByRole('button', { name: 'Editar perfil' })).toBeInTheDocument();
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument();
   });
 
   it('no perfil de outra pessoa não existe "Editar perfil"', async () => {

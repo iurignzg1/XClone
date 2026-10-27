@@ -7,6 +7,7 @@ import { LoginPage } from './features/auth/LoginPage';
 import { SignupPage } from './features/auth/SignupPage';
 import { useRestoreSession } from './features/auth/useRestoreSession';
 import { ProfilePage } from './features/profile/ProfilePage';
+import { SearchPage } from './features/search/SearchPage';
 import { HomePage } from './features/tweets/HomePage';
 import { TweetPage } from './features/tweets/TweetPage';
 import { ProtectedRoute } from './routes/ProtectedRoute';
@@ -32,6 +33,7 @@ export default function App() {
       <Route element={<ProtectedRoute />}>
         <Route element={<AppShell />}>
           <Route path="/home" element={<HomePage />} />
+          <Route path="/pesquisar" element={<SearchPage />} />
           <Route path="/pio/:id" element={<TweetPage />} />
           <Route path="/:username" element={<ProfilePage />} />
           <Route element={<ProtectedRoute role="ADMIN" />}>

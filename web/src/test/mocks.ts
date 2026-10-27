@@ -4,6 +4,7 @@ import {
   DeleteTweetDocument,
   FeedDocument,
   LoginDocument,
+  SearchUsersDocument,
   ToggleLikeDocument,
   TweetDocument,
   TweetLikesDocument,
@@ -96,6 +97,7 @@ export const profileMock = (person: typeof ana, bio: string, role = 'USER') => (
       userByUsername: {
         ...asUser(person),
         bio,
+        cover: 'grafite',
         role,
         suspended: false,
         followersCount: 3,
@@ -106,8 +108,8 @@ export const profileMock = (person: typeof ana, bio: string, role = 'USER') => (
   },
 });
 
-export const updateProfileMock = (displayName: string, bio: string) => ({
-  request: { query: UpdateProfileDocument, variables: { input: { displayName, bio } } },
+export const updateProfileMock = (displayName: string, bio: string, cover = 'grafite') => ({
+  request: { query: UpdateProfileDocument, variables: { input: { displayName, bio, cover } } },
   result: {
     data: {
       updateProfile: {
@@ -119,6 +121,11 @@ export const updateProfileMock = (displayName: string, bio: string) => ({
       },
     },
   },
+});
+
+export const searchUsersMock = (query: string, people: (typeof ana)[]) => ({
+  request: { query: SearchUsersDocument, variables: { query } },
+  result: { data: { searchUsers: people.map(asUser) } },
 });
 
 export const userTweetsMock = (username: string, tweets: unknown[]) => ({

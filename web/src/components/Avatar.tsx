@@ -2,7 +2,8 @@ import { hueOf } from '../lib/hue';
 import styles from './Avatar.module.css';
 
 // Ainda não existe foto de perfil (upload é bônus): o avatar é a inicial do
-// nome sobre a cor do @usuário.
+// nome sobre uma cor que sai do @usuário, então cada pessoa tem sempre a
+// mesma. O site é preto e branco: a cor fica só no avatar e na capa.
 export function Avatar({
   username,
   displayName,

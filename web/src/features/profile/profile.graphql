@@ -4,6 +4,7 @@ query UserByUsername($username: String!) {
     username
     displayName
     bio
+    cover
     role
     suspended
     followersCount

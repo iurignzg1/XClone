@@ -18,7 +18,7 @@ export function TweetPage() {
   const tweet = data?.tweet;
 
   return (
-    <section>
+    <section className={styles.page}>
       <header className={shared.pageTitle}>
         <Link to="/home" aria-label="Voltar para a home">←</Link>
         <h2>Pio</h2>
@@ -35,7 +35,10 @@ export function TweetPage() {
           <TweetCard tweet={tweet} featured />
           <ComposePanel replyTo={tweet.id} />
           {tweet.replies.length === 0 && <p className={`${shared.muted} ${styles.note}`}>Nenhuma resposta ainda.</p>}
-          {tweet.replies.map((reply) => <TweetCard key={reply.id} tweet={reply} />)}
+          {/* Aqui todas são respostas ao pio de cima: não precisa repetir "Em resposta a". */}
+          {tweet.replies.map((reply) => (
+            <TweetCard key={reply.id} tweet={reply} showReplyContext={false} />
+          ))}
         </>
       )}
     </section>

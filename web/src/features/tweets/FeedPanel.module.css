@@ -2,7 +2,7 @@
 /* Título "Feed" fixo no alto, com o botão de atualizar à direita. */
 .heading {
   position: sticky; top: 0; z-index: 2; justify-content: space-between; padding: 12px 16px;
-  background: color-mix(in srgb, var(--surface) 88%, transparent); backdrop-filter: blur(8px);
+  background: var(--surface);
   font-size: 1.15rem;
 }
 .heading button { font-size: 0.9rem; font-weight: 700; padding: 4px 14px; }
