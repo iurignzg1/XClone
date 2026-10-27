@@ -6,11 +6,12 @@ fragment TweetCard on Tweet {
   parentId
   likesCount
   likedByMe
+  repliesCount
   author { id username displayName }
 }
 
-query Feed($limit: Int) {
-  feed(limit: $limit) { ...TweetCard }
+query Feed($limit: Int, $after: ID) {
+  feed(limit: $limit, after: $after) { ...TweetCard }
 }
 
 mutation CreateTweet($input: CreateTweetInput!) {
@@ -27,4 +28,12 @@ mutation ToggleLike($input: ToggleLikeInput!) {
 
 query TweetLikes($tweetId: ID!) {
   tweetLikes(tweetId: $tweetId) { id username displayName followedByMe }
+}
+
+# Detalhe de um tweet: o tweet em destaque e as respostas diretas a ele.
+query Tweet($id: ID!) {
+  tweet(id: $id) {
+    ...TweetCard
+    replies { ...TweetCard }
+  }
 }

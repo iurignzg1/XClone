@@ -4,6 +4,7 @@ import {
   CombinedGraphQLErrors,
   HttpLink,
   InMemoryCache,
+  type Reference,
 } from '@apollo/client';
 import { SetContextLink } from '@apollo/client/link/context';
 import { ErrorLink } from '@apollo/client/link/error';
@@ -43,9 +44,31 @@ const errorLink = new ErrorLink(({ error, operation, forward }) => {
   );
 });
 
+// Paginação do feed por cursor. Todas as páginas ficam numa lista só no cache
+// (keyArgs: false = os argumentos não separam listas). Página sem `after` é a
+// primeira, então substitui a lista (abertura da tela, "Atualizar"). Página
+// com `after` vem depois da última já carregada, então é anexada.
+export const createCache = () =>
+  new InMemoryCache({
+    typePolicies: {
+      Query: {
+        fields: {
+          feed: {
+            keyArgs: false,
+            merge(existing: readonly Reference[] = [], incoming: readonly Reference[], { args }) {
+              if (!args?.after) return incoming;
+              const seen = new Set(existing.map((ref) => ref.__ref));
+              return [...existing, ...incoming.filter((ref) => !seen.has(ref.__ref))];
+            },
+          },
+        },
+      },
+    },
+  });
+
 // A ordem importa: o errorLink fica antes do authLink para, ao repetir a
 // operação, o authLink rodar de novo e já mandar o token renovado.
 export const apolloClient = new ApolloClient({
   link: ApolloLink.from([errorLink, authLink, new HttpLink({ uri: API_URL })]),
-  cache: new InMemoryCache(),
+  cache: createCache(),
 });

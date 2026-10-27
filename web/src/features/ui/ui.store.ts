@@ -16,7 +16,7 @@ export const useUiStore = create<UiState>()(
       theme: null,
       setTheme: (theme) => set({ theme }),
     }),
-    { name: 'xclone-ui', partialize: (state) => ({ theme: state.theme }) },
+    { name: 'pio-ui', partialize: (state) => ({ theme: state.theme }) },
   ),
 );
 

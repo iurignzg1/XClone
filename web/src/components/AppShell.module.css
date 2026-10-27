@@ -1,0 +1,42 @@
+/* Celular: tudo em coluna, a barra lateral vira um cabeçalho.
+   Telas largas: três colunas. A barra lateral fica encostada na esquerda da janela,
+   o conteúdo no meio e a terceira coluna só equilibra o espaço. Quando a janela
+   é estreita, as colunas dos lados encolhem e o conteúdo ocupa o que sobra. */
+.layout {
+  display: flex; flex-direction: column; gap: 12px;
+  padding: calc(12px + env(safe-area-inset-top, 0px)) max(12px, env(safe-area-inset-right, 0px))
+    calc(48px + env(safe-area-inset-bottom, 0px)) max(12px, env(safe-area-inset-left, 0px));
+}
+.sidebar { display: flex; flex-direction: column; gap: 12px; }
+.brand { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.brand h1 { flex: 1 1 auto; font-size: 1.6rem; }
+
+.nav { display: flex; flex-wrap: wrap; gap: 4px; }
+.item {
+  display: inline-flex; align-items: center; gap: 12px; padding: 10px 16px; border-radius: 999px;
+  color: var(--ink); font-size: 1.05rem;
+}
+.item:hover { background: var(--hover); text-decoration: none; }
+/* NavLink põe a classe "active" na página atual. */
+.item:global(.active) { font-weight: 700; background: var(--hover); }
+
+.account { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; padding: 12px; background: var(--surface); border-radius: 16px; box-shadow: 0 1px 3px rgb(0 0 0 / 0.08); }
+.who { display: flex; flex-direction: column; min-width: 0; flex: 1 1 8rem; }
+.who strong, .who span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.exit { display: flex; flex-wrap: wrap; gap: 6px; flex-basis: 100%; }
+.exit button { flex: 1 1 auto; padding: 4px 12px; font-size: 0.85rem; }
+
+.main { min-width: 0; background: var(--surface); border-radius: 20px; box-shadow: 0 1px 3px rgb(0 0 0 / 0.08); overflow: clip; display: flex; flex-direction: column; }
+
+@media (min-width: 800px) {
+  .layout {
+    display: grid; grid-template-columns: minmax(230px, 1fr) minmax(0, 640px) minmax(0, 1fr);
+    align-items: start; gap: 24px; padding-top: calc(20px + env(safe-area-inset-top, 0px));
+    padding-left: max(24px, env(safe-area-inset-left, 0px));
+  }
+  /* A barra ocupa a altura da janela, então a conta (margin-top: auto) vai para o fundo. */
+  .sidebar { position: sticky; top: 20px; height: calc(100dvh - 40px); width: 230px; justify-self: start; }
+  .account { margin-top: auto; }
+  .nav { flex-direction: column; }
+  .exit { flex-direction: column; }
+}

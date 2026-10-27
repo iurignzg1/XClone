@@ -1,0 +1,53 @@
+/* Perfil num container só: identidade, bio, números e ações. Borda fina e cantos
+   pequenos, como as células do site de referência. A cor da pessoa (--hue, do
+   @usuário) aparece só no @ e no selo do papel. */
+.card, .listTitle {
+  --vivid: hsl(var(--hue) 60% 50%);
+  --ink-hue: color-mix(in srgb, var(--vivid) 62%, var(--ink));
+  --soft: color-mix(in srgb, var(--vivid) 14%, var(--surface));
+}
+.card {
+  margin: 20px 16px 8px; padding: clamp(1.1rem, 2.4vw, 1.5rem); gap: 20px;
+  background: var(--bg); border: 1px solid var(--line); border-radius: 0.35rem;
+}
+
+.identity { display: flex; flex-direction: row; align-items: center; gap: 16px; }
+.names { flex: 1 1 0; min-width: 0; display: flex; flex-direction: column; gap: 8px; }
+.head { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 2px 12px; }
+.name { font-size: 1.4rem; font-weight: 600; overflow-wrap: anywhere; }
+.handle { color: var(--ink-hue); font-size: 0.9rem; font-weight: 600; letter-spacing: 0.04em; }
+
+.badges { margin: 0; display: flex; flex-wrap: wrap; gap: 8px; }
+.badge {
+  padding: 3px 10px 2px; border-radius: 0.15rem; background: var(--soft); color: var(--ink-hue);
+  font-size: 0.72rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase;
+}
+.suspended { background: color-mix(in srgb, var(--error) 14%, var(--surface)); color: var(--error); }
+
+.bio { margin: 0; overflow-wrap: anywhere; white-space: pre-wrap; }
+
+/* Seguindo na esquerda e seguidores na direita, com um número grande em cada. */
+.stats { margin: 0; display: flex; justify-content: space-between; gap: 16px; padding-top: 18px; border-top: 1px solid var(--line); }
+.stats div { display: flex; flex-direction: column-reverse; gap: 2px; }
+.stats div:last-child { align-items: flex-end; text-align: right; }
+.stats dd { margin: 0; font-size: 2rem; font-weight: 600; line-height: 1.1; }
+.stats dt { color: var(--muted); font-size: 0.78rem; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; }
+
+.buttons { display: flex; flex-wrap: wrap; gap: 8px; }
+.buttons button { flex: 1 1 8rem; }
+
+/* Edição do perfil, no lugar da identidade e da bio. */
+.edit { display: flex; flex-direction: column; gap: 14px; }
+.field { display: flex; flex-direction: column; gap: 4px; font-size: 0.9rem; font-weight: 600; }
+.field input, .field textarea { font-weight: 400; font-size: 1rem; }
+.field textarea { resize: vertical; }
+.field span { font-weight: 400; align-self: flex-end; }
+.editButtons { display: flex; gap: 8px; }
+.editButtons button { flex: 1 1 0; }
+
+/* Título da lista: uma barra de cor na lateral, como os cabeçalhos de seção do site de referência. */
+.listTitle {
+  position: relative; margin: 12px 16px 4px; padding-inline-start: 14px; font-size: 1.15rem; font-weight: 600;
+}
+.listTitle::before { content: ''; position: absolute; inset-block: 0.15rem; inset-inline-start: 0; width: 3px; background: var(--vivid); }
+.empty { padding: 24px 16px; text-align: center; margin: 0; }

@@ -18,6 +18,8 @@ interface AuthState {
   refreshToken: string | null;
   setSession: (session: Session) => void;
   clearSession: () => void;
+  // Atualiza campos do usuário logado (ex.: o nome depois de editá-lo).
+  updateUser: (patch: Partial<SessionUser>) => void;
 }
 
 export const useAuthStore = create<AuthState>()(
@@ -30,9 +32,11 @@ export const useAuthStore = create<AuthState>()(
         set({ user, accessToken, refreshToken }),
       clearSession: () =>
         set({ user: null, accessToken: null, refreshToken: null }),
+      updateUser: (patch) =>
+        set((state) => (state.user ? { user: { ...state.user, ...patch } } : {})),
     }),
     {
-      name: 'xclone-session',
+      name: 'pio-session',
       partialize: (state) => ({ refreshToken: state.refreshToken }),
     },
   ),

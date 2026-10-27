@@ -1,45 +1,53 @@
 import { useMutation } from '@apollo/client/react';
 import { useState, type FormEvent } from 'react';
+import { Avatar } from '../../components/Avatar';
 import { ErrorBox } from '../../components/ErrorBox';
 import { CreateTweetDocument } from '../../gql/graphql';
 import { attempt } from '../../lib/attempt';
+import { useAuthStore } from '../auth/auth.store';
+import styles from './ComposePanel.module.css';
+import shared from '../../styles/shared.module.css';
 
-export function ComposePanel() {
+const MAX = 280;
+
+// Com `replyTo`, publica uma resposta a esse tweet.
+export function ComposePanel({ replyTo }: { replyTo?: string }) {
+  const me = useAuthStore((s) => s.user);
   const [content, setContent] = useState('');
-  const [parentId, setParentId] = useState('');
   const [createTweet, { loading, error }] = useMutation(CreateTweetDocument, {
     refetchQueries: 'active',
   });
 
+  const length = content.trim().length;
+  const label = replyTo ? 'Responder' : 'Publicar';
+
   async function onSubmit(event: FormEvent) {
     event.preventDefault();
     const ok = await attempt(() =>
-      createTweet({
-        variables: { input: { content, parentId: parentId.trim() || undefined } },
-      }),
+      createTweet({ variables: { input: { content, parentId: replyTo } } }),
     );
     if (ok) setContent('');
   }
 
   return (
-    <section>
-      <h2>Publicar</h2>
-      <form onSubmit={(e) => void onSubmit(e)}>
+    <form className={styles.compose} onSubmit={(e) => void onSubmit(e)}>
+      {me && <Avatar username={me.username} displayName={me.displayName} />}
+      <div className={styles.fields}>
         <textarea
           value={content}
           onChange={(e) => setContent(e.target.value)}
-          placeholder="O que está acontecendo?"
-          rows={3}
+          placeholder={replyTo ? 'Publique sua resposta' : 'O que está acontecendo?'}
+          aria-label={replyTo ? 'Sua resposta' : 'Novo pio'}
+          rows={2}
         />
-        <p className="muted">{content.trim().length}/280</p>
-        <input
-          value={parentId}
-          onChange={(e) => setParentId(e.target.value)}
-          placeholder="(opcional) id do tweet respondido"
-        />
-        <button disabled={loading}>{loading ? 'Publicando…' : 'Publicar'}</button>
+        <div className={styles.footer}>
+          <span className={length > MAX ? shared.error : shared.muted}>{length}/{MAX}</span>
+          <button className={shared.primary} disabled={loading || length === 0 || length > MAX}>
+            {loading ? 'Enviando…' : label}
+          </button>
+        </div>
         <ErrorBox error={error} />
-      </form>
-    </section>
+      </div>
+    </form>
   );
 }

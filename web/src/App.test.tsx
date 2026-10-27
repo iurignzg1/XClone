@@ -1,174 +1,77 @@
-import { MockedProvider } from '@apollo/client/testing/react';
-import { render, screen } from '@testing-library/react';
+import { screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { GraphQLError } from 'graphql';
 import { afterEach, describe, expect, it } from 'vitest';
-import App from './App';
-import { useAuthStore } from './features/auth/auth.store';
 import {
-  DeleteTweetDocument,
-  FeedDocument,
-  ToggleLikeDocument,
-  TweetLikesDocument,
-} from './gql/graphql';
+  ana,
+  bia,
+  caio,
+  deleteForbiddenMock,
+  feedMock,
+  feedOfflineMock,
+  loginAs,
+  loginMock,
+  logout,
+  manyTweets,
+  profileMock,
+  toggleLikeMock,
+  tweet,
+  tweetDetailMock,
+  tweetLikesMock,
+  updateProfileMock,
+  userTweetsMock,
+} from './test/mocks';
+import { renderApp } from './test/renderApp';
 
-// Os testes usam um servidor GraphQL de mentira (MockedProvider): cada mock diz
-// "se o app fizer ESTA operação com ESTAS variáveis, responda ISTO".
+afterEach(logout);
 
-const tweet = (over: Record<string, unknown> = {}) => ({
-  __typename: 'Tweet',
-  id: 't1',
-  content: 'olá mundo',
-  createdAt: '2026-10-26T12:00:00.000Z',
-  parentId: null,
-  likesCount: 0,
-  likedByMe: false,
-  author: { __typename: 'User', id: 'u2', username: 'bia', displayName: 'Bia' },
-  ...over,
-});
+describe('rotas e acesso', () => {
+  it('sem sessão, manda para o login e esconde o resto', () => {
+    renderApp('/home');
 
-const feedMock = (tweets: unknown[]) => ({
-  request: { query: FeedDocument, variables: { limit: 20 } },
-  result: { data: { feed: tweets } },
-});
-
-// Simula "estar logado" sem passar pelo login. refreshToken nulo evita a
-// tentativa de restaurar a sessão pela rede.
-function loginAs(role: 'USER' | 'ADMIN' = 'USER') {
-  useAuthStore.setState({
-    user: { id: 'u1', username: 'ana', displayName: 'Ana', email: 'ana@x.com', role },
-    accessToken: 'token',
-    refreshToken: null,
-  });
-}
-
-afterEach(() => {
-  useAuthStore.setState({ user: null, accessToken: null, refreshToken: null });
-  localStorage.clear();
-});
-
-describe('App', () => {
-  it('sem sessão, mostra criar conta e entrar, e esconde o resto', () => {
-    render(
-      <MockedProvider mocks={[]}>
-        <App />
-      </MockedProvider>,
-    );
-
-    expect(screen.getByRole('heading', { name: 'Criar conta' })).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: 'Entrar' })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Criar conta' })).toHaveAttribute('href', '/signup');
     expect(screen.queryByRole('heading', { name: /Feed/ })).not.toBeInTheDocument();
   });
 
-  it('logado, mostra quem é o usuário e o feed', async () => {
-    loginAs();
-    render(
-      <MockedProvider mocks={[feedMock([tweet()])]}>
-        <App />
-      </MockedProvider>,
-    );
+  it('depois do login, volta para a página que o visitante queria abrir', async () => {
+    renderApp('/pio/t1', [loginMock('ana@x.com', 'senha-segura'), tweetDetailMock('t1')]);
+
+    await userEvent.type(screen.getByLabelText('E-mail'), 'ana@x.com');
+    await userEvent.type(screen.getByLabelText('Senha'), 'senha-segura');
+    await userEvent.click(screen.getByRole('button', { name: 'Entrar' }));
 
     expect(await screen.findByText('olá mundo')).toBeInTheDocument();
-    expect(screen.getByText(/@bia/)).toBeInTheDocument();
-    expect(screen.getByText(/Logado como/)).toHaveTextContent('Ana');
+    expect(screen.getByRole('heading', { name: 'Pio', level: 2 })).toBeInTheDocument();
   });
 
-  it('curtir chama a mutation e o feed refeito mostra o coração cheio', async () => {
+  it('logado, /login leva para a home', async () => {
     loginAs();
-    const toggle = {
-      request: { query: ToggleLikeDocument, variables: { input: { tweetId: 't1' } } },
-      result: { data: { toggleLike: { __typename: 'ToggleLikePayload', liked: true, likesCount: 1 } } },
-    };
-    render(
-      <MockedProvider
-        mocks={[
-          feedMock([tweet()]),
-          toggle,
-          feedMock([tweet({ likesCount: 1, likedByMe: true })]),
-        ]}
-      >
-        <App />
-      </MockedProvider>,
-    );
+    renderApp('/login', [feedMock([])]);
 
-    await userEvent.click(await screen.findByRole('button', { name: /♡ Curtir \(0\)/ }));
-
-    expect(await screen.findByRole('button', { name: /♥ Descurtir \(1\)/ })).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: /Feed/ })).toBeInTheDocument();
   });
 
-  it('"Quem curtiu" lista os usuários que curtiram', async () => {
-    loginAs();
-    const likes = {
-      request: { query: TweetLikesDocument, variables: { tweetId: 't1' } },
-      result: {
-        data: {
-          tweetLikes: [
-            { __typename: 'User', id: 'u3', username: 'caio', displayName: 'Caio', followedByMe: true },
-          ],
-        },
-      },
-    };
-    render(
-      <MockedProvider mocks={[feedMock([tweet({ likesCount: 1 })]), likes]}>
-        <App />
-      </MockedProvider>,
-    );
+  it('/admin é só para ADMIN: usuário comum volta para a home', async () => {
+    loginAs('USER');
+    renderApp('/admin', [feedMock([])]);
 
-    await userEvent.click(await screen.findByRole('button', { name: 'Quem curtiu' }));
-
-    expect(await screen.findByText(/Caio @caio/)).toBeInTheDocument();
-    expect(screen.getByText(/você segue/)).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: /Feed/ })).toBeInTheDocument();
+    expect(screen.queryByRole('heading', { name: 'Administração' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: 'Admin' })).not.toBeInTheDocument();
   });
 
-  it('mostra o código do erro quando o back recusa a ação (FORBIDDEN)', async () => {
-    loginAs();
-    const del = {
-      request: { query: DeleteTweetDocument, variables: { input: { tweetId: 't1' } } },
-      result: {
-        errors: [
-          new GraphQLError('Você só pode apagar os seus próprios tweets', {
-            extensions: { code: 'FORBIDDEN' },
-          }),
-        ],
-      },
-    };
-    render(
-      <MockedProvider mocks={[feedMock([tweet()]), del]}>
-        <App />
-      </MockedProvider>,
-    );
+  it('/admin abre para ADMIN, que vê o link no menu', async () => {
+    loginAs('ADMIN');
+    renderApp('/admin');
 
-    await userEvent.click(await screen.findByRole('button', { name: 'Apagar' }));
-
-    expect(await screen.findByRole('alert')).toHaveTextContent(
-      'FORBIDDEN: Você só pode apagar os seus próprios tweets',
-    );
-  });
-
-  it('com a API fora do ar, explica o problema em vez de só "Failed to fetch"', async () => {
-    loginAs();
-    const offline = {
-      request: { query: FeedDocument, variables: { limit: 20 } },
-      error: new TypeError('Failed to fetch'),
-    };
-    render(
-      <MockedProvider mocks={[offline]}>
-        <App />
-      </MockedProvider>,
-    );
-
-    expect(await screen.findByRole('alert')).toHaveTextContent(/Não consegui falar com a API/);
-    expect(screen.getByRole('alert')).toHaveTextContent(/npm run start/);
+    expect(await screen.findByRole('heading', { name: 'Administração' })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Admin' })).toBeInTheDocument();
   });
 
   it('mostra a logo preta para o tema claro e a branca para o escuro', () => {
-    render(
-      <MockedProvider mocks={[]}>
-        <App />
-      </MockedProvider>,
-    );
+    renderApp();
 
-    const logos = screen.getAllByAltText('XClone');
+    const logos = screen.getAllByAltText('Pio');
 
     // O CSS escolhe qual das duas aparece; aqui conferimos que as duas existem.
     expect(logos.map((logo) => logo.getAttribute('src'))).toEqual([
@@ -176,23 +79,223 @@ describe('App', () => {
       '/logo-branca.svg',
     ]);
   });
+});
 
-  it('não oferece "seguir autor" nos próprios tweets', async () => {
+describe('feed', () => {
+  it('logado, mostra quem é o usuário e o feed', async () => {
     loginAs();
-    render(
-      <MockedProvider
-        mocks={[
-          feedMock([
-            tweet({ author: { __typename: 'User', id: 'u1', username: 'ana', displayName: 'Ana' } }),
-          ]),
-        ]}
-      >
-        <App />
-      </MockedProvider>,
+    renderApp('/home', [feedMock([tweet()])]);
+
+    expect(await screen.findByText('olá mundo')).toBeInTheDocument();
+    expect(screen.getByText(/@bia/)).toBeInTheDocument();
+    expect(screen.getByText(/@ana/)).toBeInTheDocument();
+  });
+
+  it('curtir chama a mutation e o feed refeito mostra o coração cheio', async () => {
+    loginAs();
+    renderApp('/home', [
+      feedMock([tweet()]),
+      toggleLikeMock('t1', 1),
+      feedMock([tweet({ likesCount: 1, likedByMe: true })]),
+    ]);
+
+    await userEvent.click(await screen.findByRole('button', { name: 'Curtir (0)' }));
+
+    expect(await screen.findByRole('button', { name: 'Descurtir (1)' })).toBeInTheDocument();
+  });
+
+  it('"Quem curtiu" lista os usuários que curtiram', async () => {
+    loginAs();
+    renderApp('/home', [feedMock([tweet({ likesCount: 1 })]), tweetLikesMock('t1', [caio], true)]);
+
+    await userEvent.click(await screen.findByRole('button', { name: 'Quem curtiu' }));
+
+    expect(await screen.findByText('Caio')).toBeInTheDocument();
+    expect(screen.getByText('@caio')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Seguindo' })).toBeInTheDocument();
+  });
+
+  it('mostra o código do erro quando o back recusa a ação (FORBIDDEN)', async () => {
+    loginAs();
+    renderApp('/home', [feedMock([tweet({ author: { __typename: 'User', ...ana } })]), deleteForbiddenMock('t1')]);
+
+    await userEvent.click(await screen.findByRole('button', { name: 'Apagar' }));
+
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      'FORBIDDEN: Você só pode apagar os seus próprios pios',
     );
+  });
 
-    await screen.findByText('olá mundo');
+  it('carrega mais pios com o cursor (id do último) e some o botão no fim', async () => {
+    loginAs();
+    renderApp('/home', [
+      feedMock(manyTweets(20)),
+      feedMock([tweet({ id: 't21', content: 'pio 21' })], { limit: 20, after: 't20' }),
+    ]);
 
-    expect(screen.queryByRole('button', { name: 'Seguir autor' })).not.toBeInTheDocument();
+    await userEvent.click(await screen.findByRole('button', { name: 'Carregar mais' }));
+
+    expect(await screen.findByText('pio 21')).toBeInTheDocument();
+    expect(screen.getByText('pio 1')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Carregar mais' })).not.toBeInTheDocument();
+    expect(screen.getByText('Você chegou ao fim do feed.')).toBeInTheDocument();
+  });
+
+  it('com a API fora do ar, explica o problema em vez de só "Failed to fetch"', async () => {
+    loginAs();
+    renderApp('/home', [feedOfflineMock()]);
+
+    expect(await screen.findByRole('alert')).toHaveTextContent(/Não consegui falar com a API/);
+    expect(screen.getByRole('alert')).toHaveTextContent(/npm run start/);
+  });
+
+  it('mostra quantas respostas o pio tem', async () => {
+    loginAs();
+    renderApp('/home', [feedMock([tweet({ repliesCount: 3 })])]);
+
+    expect(await screen.findByRole('link', { name: 'Responder (3)' })).toHaveAttribute('href', '/pio/t1');
+  });
+
+  it('clicar no pio abre o detalhe com as respostas', async () => {
+    loginAs();
+    renderApp('/home', [
+      feedMock([tweet({ repliesCount: 1 })]),
+      tweetDetailMock('t1', [tweet({ id: 't2', content: 'resposta aqui', parentId: 't1' })]),
+    ]);
+
+    await userEvent.click(await screen.findByText('olá mundo'));
+
+    expect(await screen.findByText('resposta aqui')).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Pio', level: 2 })).toBeInTheDocument();
+  });
+
+  it('clicar num botão do pio não abre o detalhe', async () => {
+    loginAs();
+    renderApp('/home', [feedMock([tweet()]), tweetLikesMock('t1', [], false)]);
+
+    await userEvent.click(await screen.findByRole('button', { name: 'Quem curtiu' }));
+
+    expect(await screen.findByRole('dialog')).toBeInTheDocument();
+    expect(screen.queryByRole('heading', { name: 'Pio', level: 2 })).not.toBeInTheDocument();
+  });
+
+  it('usuário comum só vê "Apagar" nos próprios pios', async () => {
+    loginAs('USER');
+    renderApp('/home', [
+      feedMock([
+        tweet({ id: 't1', author: { __typename: 'User', ...ana } }),
+        tweet({ id: 't2', content: 'da Bia' }),
+      ]),
+    ]);
+
+    await screen.findByText('da Bia');
+
+    expect(screen.getAllByRole('button', { name: 'Apagar' })).toHaveLength(1);
+  });
+
+  it('moderador e admin veem "Apagar" nos pios de qualquer um', async () => {
+    loginAs('ADMIN');
+    renderApp('/home', [feedMock([tweet()])]);
+
+    expect(await screen.findByRole('button', { name: 'Apagar' })).toBeInTheDocument();
+  });
+
+  it('enquanto carrega, mostra o esqueleto dos pios', () => {
+    loginAs();
+    renderApp('/home', [feedMock([tweet()])]);
+
+    expect(screen.getByRole('status', { name: 'Carregando pios' })).toBeInTheDocument();
   });
 });
+
+describe('detalhe do pio e perfil', () => {
+  it('o detalhe do pio mostra o pio e as respostas', async () => {
+    loginAs();
+    renderApp('/pio/t1', [
+      tweetDetailMock('t1', [tweet({ id: 't2', content: 'resposta aqui', parentId: 't1' })]),
+    ]);
+
+    expect(await screen.findByText('olá mundo')).toBeInTheDocument();
+    expect(await screen.findByText('resposta aqui')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Responder' })).toBeInTheDocument();
+  });
+
+  it('/:username abre o perfil desse usuário', async () => {
+    loginAs();
+    renderApp('/bia', [profileMock(bia, 'oi, sou a Bia'), userTweetsMock('bia', [tweet()])]);
+
+    expect(await screen.findByText('oi, sou a Bia')).toBeInTheDocument();
+    expect(await screen.findByText('olá mundo')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Seguir' })).toBeInTheDocument();
+    expect(screen.queryByText('USER')).not.toBeInTheDocument();
+  });
+
+  it.each(['ADMIN', 'MODERATOR'])('o perfil de um %s mostra o selo do papel', async (role) => {
+    loginAs();
+    renderApp('/bia', [profileMock(bia, 'oi', role), userTweetsMock('bia', [])]);
+
+    expect(await screen.findByText(role)).toBeInTheDocument();
+  });
+
+  it('a barra lateral só mostra o papel de quem não é usuário comum', async () => {
+    loginAs('USER');
+    renderApp('/home', [feedMock([])]);
+    await screen.findByRole('heading', { name: /Feed/ });
+    expect(screen.getByText('@ana')).toBeInTheDocument();
+  });
+
+  it('a barra lateral mostra o papel do ADMIN logado', async () => {
+    loginAs('ADMIN');
+    renderApp('/home', [feedMock([])]);
+
+    expect(await screen.findByText('@ana · ADMIN')).toBeInTheDocument();
+  });
+
+  it('no próprio perfil, dá para editar nome e bio, que mudam na tela e na barra lateral', async () => {
+    loginAs();
+    renderApp('/ana', [
+      profileMock(ana, 'minha bio'),
+      userTweetsMock('ana', []),
+      updateProfileMock('Ana Maria', 'Nova bio do perfil'),
+      profileMock({ ...ana, displayName: 'Ana Maria' }, 'Nova bio do perfil'),
+      userTweetsMock('ana', []),
+    ]);
+
+    await userEvent.click(await screen.findByRole('button', { name: 'Editar perfil' }));
+    const name = screen.getByLabelText('Nome de exibição');
+    await userEvent.clear(name);
+    await userEvent.type(name, 'Ana Maria');
+    const bio = screen.getByLabelText(/^Bio/);
+    expect(bio).toHaveValue('minha bio');
+    await userEvent.clear(bio);
+    await userEvent.type(bio, 'Nova bio do perfil');
+    await userEvent.click(screen.getByRole('button', { name: 'Salvar' }));
+
+    expect(await screen.findByRole('heading', { name: 'Ana Maria', level: 3 })).toBeInTheDocument();
+    expect(screen.getByText('Nova bio do perfil')).toBeInTheDocument();
+    expect(screen.queryByLabelText('Nome de exibição')).not.toBeInTheDocument();
+    expect(screen.getByText('Ana Maria', { selector: 'strong' })).toBeInTheDocument();
+  });
+
+  it('o formulário de perfil mostra o contador da bio e o Cancelar fecha sem salvar', async () => {
+    loginAs();
+    renderApp('/ana', [profileMock(ana, 'oi'), userTweetsMock('ana', [])]);
+
+    await userEvent.click(await screen.findByRole('button', { name: 'Editar perfil' }));
+    expect(screen.getByText('2/160')).toBeInTheDocument();
+    await userEvent.click(screen.getByRole('button', { name: 'Cancelar' }));
+
+    expect(screen.queryByLabelText('Nome de exibição')).not.toBeInTheDocument();
+    expect(screen.getByText('oi')).toBeInTheDocument();
+  });
+
+  it('no perfil de outra pessoa não existe "Editar perfil"', async () => {
+    loginAs();
+    renderApp('/bia', [profileMock(bia, 'oi'), userTweetsMock('bia', [])]);
+
+    await screen.findByText('oi');
+
+    expect(screen.queryByRole('button', { name: 'Editar perfil' })).not.toBeInTheDocument();
+  });
+});
+

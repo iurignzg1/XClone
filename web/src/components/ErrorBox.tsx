@@ -1,5 +1,6 @@
 import { CombinedGraphQLErrors } from '@apollo/client';
 import { API_URL } from '../config';
+import shared from '../styles/shared.module.css';
 
 // "Failed to fetch" (Chrome), "NetworkError..." (Firefox) e "Load failed"
 // (Safari): o navegador não conseguiu nem falar com a API.
@@ -12,7 +13,7 @@ export function ErrorBox({ error }: { error?: { message: string } }) {
 
   if (NETWORK_FAILURE.test(error.message)) {
     return (
-      <p className="error" role="alert">
+      <p className={shared.error} role="alert">
         Não consegui falar com a API em {API_URL}. Ela está rodando (
         <code>cd api &amp;&amp; npm run start</code>)? O endereço do front está
         liberado no CORS_ORIGIN da API?
@@ -24,7 +25,7 @@ export function ErrorBox({ error }: { error?: { message: string } }) {
     ? error.errors[0]?.extensions?.code
     : undefined;
   return (
-    <p className="error" role="alert">
+    <p className={shared.error} role="alert">
       {typeof code === 'string' && <strong>{code}: </strong>}
       {error.message}
     </p>

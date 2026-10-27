@@ -32,52 +32,52 @@ describe('ThemeToggle', () => {
 
     expect(attribute()).toBeUndefined();
     // Sistema claro: o botão leva ao escuro.
-    expect(screen.getByRole('button', { name: '☾ Tema escuro' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Tema escuro' })).toBeInTheDocument();
   });
 
   it('com o sistema escuro, o botão leva ao claro', () => {
     systemTheme('dark');
     render(<ThemeToggle />);
 
-    expect(screen.getByRole('button', { name: '☀ Tema claro' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Tema claro' })).toBeInTheDocument();
   });
 
   it('ao apertar, troca o tema na página e o botão passa a levar de volta', async () => {
     render(<ThemeToggle />);
 
-    await userEvent.click(screen.getByRole('button', { name: '☾ Tema escuro' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Tema escuro' }));
 
     expect(attribute()).toBe('dark');
-    expect(screen.getByRole('button', { name: '☀ Tema claro' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Tema claro' })).toBeInTheDocument();
 
-    await userEvent.click(screen.getByRole('button', { name: '☀ Tema claro' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Tema claro' }));
 
     expect(attribute()).toBe('light');
-    expect(screen.getByRole('button', { name: '☾ Tema escuro' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Tema escuro' })).toBeInTheDocument();
   });
 
   it('a escolha manda mais que o sistema: sistema escuro, usuário escolhe claro', async () => {
     systemTheme('dark');
     render(<ThemeToggle />);
 
-    await userEvent.click(screen.getByRole('button', { name: '☀ Tema claro' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Tema claro' }));
 
     expect(attribute()).toBe('light');
-    expect(screen.getByRole('button', { name: '☾ Tema escuro' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Tema escuro' })).toBeInTheDocument();
   });
 
   it('guarda a escolha no localStorage e a recupera ao recarregar', async () => {
     render(<ThemeToggle />);
-    await userEvent.click(screen.getByRole('button', { name: '☾ Tema escuro' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Tema escuro' }));
 
-    const saved = localStorage.getItem('xclone-ui') ?? '';
+    const saved = localStorage.getItem('pio-ui') ?? '';
     expect(JSON.parse(saved)).toMatchObject({ state: { theme: 'dark' } });
 
     // Simula recarregar a página: a memória começa vazia e o que estava salvo
     // no localStorage é lido de volta. (setState também regrava o localStorage,
     // por isso devolvemos o conteúdo salvo antes de ler.)
     useUiStore.setState({ theme: null });
-    localStorage.setItem('xclone-ui', saved);
+    localStorage.setItem('pio-ui', saved);
     await useUiStore.persist.rehydrate();
 
     expect(useUiStore.getState().theme).toBe('dark');

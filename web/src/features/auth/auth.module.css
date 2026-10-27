@@ -1,0 +1,8 @@
+/* Formulários de entrar e criar conta. */
+.form { display: flex; flex-direction: column; gap: 14px; }
+.form h2 { display: block; font-size: 1.4rem; }
+.field { display: flex; flex-direction: column; gap: 4px; font-size: 0.9rem; font-weight: 600; }
+.field input { font-weight: 400; }
+.hint { color: var(--muted); font-size: 0.8rem; font-weight: 400; }
+.submit { padding: 10px 16px; }
+.switch { margin: 0; text-align: center; }

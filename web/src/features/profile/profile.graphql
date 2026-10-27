@@ -27,3 +27,7 @@ mutation UnfollowUser($input: FollowUserInput!) {
 mutation SuspendUser($input: SuspendUserInput!) {
   suspendUser(input: $input) { id suspended }
 }
+
+mutation UpdateProfile($input: UpdateProfileInput!) {
+  updateProfile(input: $input) { id username displayName email role }
+}
