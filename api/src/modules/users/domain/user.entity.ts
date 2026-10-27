@@ -1,3 +1,4 @@
+import type { ProfileCover } from './profile-cover.js';
 import type { UserRole } from './user-role.enum.js';
 
 export interface User {
@@ -8,6 +9,7 @@ export interface User {
   role: UserRole;
   displayName: string;
   bio: string;
+  cover: ProfileCover;
   suspended: boolean;
   createdAt: Date;
 }
@@ -23,4 +25,5 @@ export interface NewUser {
 export interface ProfileChanges {
   displayName: string;
   bio: string;
+  cover: ProfileCover;
 }

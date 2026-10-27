@@ -33,6 +33,7 @@ input LoginInput {
 
 type Me {
   bio: String!
+  cover: String!
   createdAt: DateTime!
   displayName: String!
   email: String!
@@ -60,6 +61,7 @@ type Mutation {
 type Query {
   feed(after: ID, limit: Int! = 20): [Tweet!]!
   me: Me!
+  searchUsers(limit: Int! = 10, query: String!): [User!]!
   tweet(id: ID!): Tweet!
   tweetLikes(limit: Int! = 50, tweetId: ID!): [User!]!
   userByUsername(username: String!): User!
@@ -105,11 +107,13 @@ type Tweet {
 
 input UpdateProfileInput {
   bio: String!
+  cover: String!
   displayName: String!
 }
 
 type User {
   bio: String!
+  cover: String!
   createdAt: DateTime!
   displayName: String!
   followedByMe: Boolean!

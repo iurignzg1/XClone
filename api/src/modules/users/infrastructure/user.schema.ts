@@ -1,5 +1,10 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import type { HydratedDocument } from 'mongoose';
+import {
+  DEFAULT_COVER,
+  PROFILE_COVERS,
+  type ProfileCover,
+} from '../domain/profile-cover.js';
 import { UserRole } from '../domain/user-role.enum.js';
 
 @Schema({
@@ -36,6 +41,9 @@ export class UserModel {
 
   @Prop({ type: String, default: '' })
   bio: string;
+
+  @Prop({ type: String, enum: PROFILE_COVERS, default: DEFAULT_COVER })
+  cover: ProfileCover;
 
   @Prop({ type: Boolean, default: false })
   suspended: boolean;

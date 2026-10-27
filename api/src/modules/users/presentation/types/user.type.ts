@@ -20,6 +20,10 @@ export abstract class BaseUserType {
   @Field()
   bio: string;
 
+  // Nome da capa escolhida (ver PROFILE_COVERS).
+  @Field()
+  cover: string;
+
   @Field(() => UserRole)
   role: UserRole;
 

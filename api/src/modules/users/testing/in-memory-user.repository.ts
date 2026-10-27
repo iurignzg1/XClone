@@ -1,5 +1,6 @@
 import { UserConflictError } from '../domain/user-conflict.error.js';
 import { UserRole } from '../domain/user-role.enum.js';
+import { DEFAULT_COVER } from '../domain/profile-cover.js';
 import type { NewUser, ProfileChanges, User } from '../domain/user.entity.js';
 import { UserRepository } from '../domain/user.repository.js';
 
@@ -24,6 +25,7 @@ export class InMemoryUserRepository extends UserRepository {
       id: `user-${this.users.length + 1}`,
       role: UserRole.USER,
       bio: '',
+      cover: DEFAULT_COVER,
       suspended: false,
       createdAt: new Date(),
     };
@@ -41,6 +43,7 @@ export class InMemoryUserRepository extends UserRepository {
     if (user) {
       user.displayName = changes.displayName;
       user.bio = changes.bio;
+      user.cover = changes.cover;
     }
     return Promise.resolve(user ?? null);
   }
@@ -54,6 +57,20 @@ export class InMemoryUserRepository extends UserRepository {
   findByIds(ids: string[]) {
     this.findByIdsCalls.push(ids);
     return Promise.resolve(this.users.filter((u) => ids.includes(u.id)));
+  }
+  search(term: string, limit: number) {
+    const lower = term.toLowerCase();
+    return Promise.resolve(
+      this.users
+        .filter(
+          (u) =>
+            !u.suspended &&
+            (u.username.startsWith(lower) ||
+              u.displayName.toLowerCase().includes(lower)),
+        )
+        .sort((a, b) => a.username.localeCompare(b.username))
+        .slice(0, limit),
+    );
   }
   findByUsername(username: string) {
     return Promise.resolve(

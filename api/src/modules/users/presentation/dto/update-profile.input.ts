@@ -1,6 +1,10 @@
 import { Field, InputType } from '@nestjs/graphql';
 import { Transform } from 'class-transformer';
-import { IsString, Length, MaxLength } from 'class-validator';
+import { IsIn, IsString, Length, MaxLength } from 'class-validator';
+import {
+  PROFILE_COVERS,
+  type ProfileCover,
+} from '../../domain/profile-cover.js';
 
 export const BIO_MAX_LENGTH = 160;
 
@@ -22,4 +26,9 @@ export class UpdateProfileInput {
   @IsString()
   @MaxLength(BIO_MAX_LENGTH)
   bio: string;
+
+  // Só os nomes da lista fixa de capas são aceitos.
+  @Field()
+  @IsIn(PROFILE_COVERS, { message: 'capa desconhecida' })
+  cover: ProfileCover;
 }

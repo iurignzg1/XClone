@@ -58,6 +58,13 @@ export class UsersService {
     return user;
   }
 
+  // Busca da barra de pesquisa. Termo vazio não busca nada.
+  search(term: string, limit: number): Promise<User[]> {
+    const clean = term.trim();
+    if (!clean) return Promise.resolve([]);
+    return this.userRepository.search(clean, limit);
+  }
+
   findByIds(ids: string[]): Promise<User[]> {
     return this.userRepository.findByIds(ids);
   }

@@ -8,6 +8,9 @@ export abstract class UserRepository {
   abstract findByEmail(email: string): Promise<User | null>;
   abstract findByUsername(username: string): Promise<User | null>;
   abstract findByIds(ids: string[]): Promise<User[]>;
+  // Busca por @ (começa com o termo) ou por nome (contém o termo, sem
+  // diferenciar maiúsculas). Contas suspensas ficam de fora.
+  abstract search(term: string, limit: number): Promise<User[]>;
   // Devolve o usuário atualizado, ou null se ele não existe.
   abstract updateProfile(
     id: string,

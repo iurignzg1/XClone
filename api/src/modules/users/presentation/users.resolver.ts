@@ -4,6 +4,7 @@ import { Roles } from '../../../common/decorators/roles.decorator.js';
 import { UserRole } from '../domain/user-role.enum.js';
 import type { User } from '../domain/user.entity.js';
 import { UsersService } from '../application/users.service.js';
+import { SearchUsersArgs } from './dto/search-users.args.js';
 import { SuspendUserInput } from './dto/suspend-user.input.js';
 import { UpdateProfileInput } from './dto/update-profile.input.js';
 import { UserByUsernameArgs } from './dto/user-by-username.args.js';
@@ -19,12 +20,18 @@ export class UsersResolver {
     return user;
   }
 
+  // Barra de pesquisa: pessoas pelo @ ou pelo nome.
+  @Query(() => [UserType])
+  searchUsers(@Args() args: SearchUsersArgs): Promise<User[]> {
+    return this.usersService.search(args.query, args.limit);
+  }
+
   @Query(() => UserType)
   userByUsername(@Args() args: UserByUsernameArgs): Promise<User> {
     return this.usersService.getByUsername(args.username);
   }
 
-  // Muda o nome de exibição e a bio de quem está logado (e só dele).
+  // Muda o nome de exibição, a bio e a capa de quem está logado (e só dele).
   @Mutation(() => MeType)
   updateProfile(
     @CurrentUser() user: User,
@@ -33,6 +40,7 @@ export class UsersResolver {
     return this.usersService.updateProfile(user.id, {
       displayName: input.displayName,
       bio: input.bio,
+      cover: input.cover,
     });
   }
 

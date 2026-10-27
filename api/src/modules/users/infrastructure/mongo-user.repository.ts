@@ -2,6 +2,8 @@ import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { isValidObjectId, Model } from 'mongoose';
 import { UserConflictError } from '../domain/user-conflict.error.js';
+import { escapeRegExp } from '../../../common/utils/escape-regexp.js';
+import { DEFAULT_COVER } from '../domain/profile-cover.js';
 import type { NewUser, ProfileChanges, User } from '../domain/user.entity.js';
 import { UserRepository } from '../domain/user.repository.js';
 import { UserDocument, UserModel } from './user.schema.js';
@@ -42,6 +44,22 @@ export class MongoUserRepository extends UserRepository {
     return doc && this.toDomain(doc);
   }
 
+  async search(term: string, limit: number): Promise<User[]> {
+    const pattern = escapeRegExp(term);
+    // O @ é guardado em minúsculas, então o "começa com" usa o índice de username.
+    const docs = await this.userModel
+      .find({
+        suspended: false,
+        $or: [
+          { username: { $regex: `^${pattern.toLowerCase()}` } },
+          { displayName: { $regex: pattern, $options: 'i' } },
+        ],
+      })
+      .sort({ username: 1 })
+      .limit(limit);
+    return docs.map((doc) => this.toDomain(doc));
+  }
+
   async findByIds(ids: string[]): Promise<User[]> {
     const docs = await this.userModel.find({
       _id: { $in: ids.filter((id) => isValidObjectId(id)) },
@@ -57,7 +75,11 @@ export class MongoUserRepository extends UserRepository {
     // Só os campos do perfil entram no $set: nada além disso é editável por aqui.
     const doc = await this.userModel.findByIdAndUpdate(
       id,
-      { displayName: changes.displayName, bio: changes.bio },
+      {
+        displayName: changes.displayName,
+        bio: changes.bio,
+        cover: changes.cover,
+      },
       { new: true },
     );
     return doc && this.toDomain(doc);
@@ -93,6 +115,8 @@ export class MongoUserRepository extends UserRepository {
       role: doc.role,
       displayName: doc.displayName,
       bio: doc.bio,
+      // Contas criadas antes de existir capa não têm o campo gravado.
+      cover: doc.cover ?? DEFAULT_COVER,
       suspended: doc.suspended,
       createdAt: doc.createdAt,
     };

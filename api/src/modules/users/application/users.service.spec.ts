@@ -31,6 +31,52 @@ describe('UsersService', () => {
     });
   });
 
+  describe('search', () => {
+    async function seed() {
+      for (const [username, displayName] of [
+        ['ana', 'Ana Souza'],
+        ['anabela', 'Bela'],
+        ['bruno', 'Bruno Anacleto'],
+        ['caio', 'Caio'],
+      ]) {
+        await service.create({
+          username,
+          email: `${username}@example.com`,
+          passwordHash: 'hash',
+          displayName,
+        });
+      }
+    }
+
+    it('acha pelo começo do @ e por parte do nome, sem diferenciar maiúsculas', async () => {
+      await seed();
+
+      const found = await service.search('ANA', 10);
+
+      expect(found.map((u) => u.username)).toEqual(['ana', 'anabela', 'bruno']);
+    });
+
+    it('respeita o limite', async () => {
+      await seed();
+
+      expect(await service.search('ana', 2)).toHaveLength(2);
+    });
+
+    it('deixa contas suspensas de fora', async () => {
+      await seed();
+      const caio = repository.users.find((u) => u.username === 'caio');
+      if (caio) caio.suspended = true;
+
+      expect(await service.search('caio', 10)).toEqual([]);
+    });
+
+    it('termo só de espaços não busca nada', async () => {
+      await seed();
+
+      expect(await service.search('   ', 10)).toEqual([]);
+    });
+  });
+
   describe('updateProfile', () => {
     it('troca o nome e a bio e devolve o usuário atualizado', async () => {
       const user = await service.create({
@@ -43,10 +89,12 @@ describe('UsersService', () => {
       const result = await service.updateProfile(user.id, {
         displayName: 'Ana Silva',
         bio: 'Gosto de pios curtos.',
+        cover: 'sol',
       });
 
       expect(result.displayName).toBe('Ana Silva');
       expect(result.bio).toBe('Gosto de pios curtos.');
+      expect(result.cover).toBe('sol');
       const saved = repository.users.find((u) => u.id === user.id);
       expect(saved?.displayName).toBe('Ana Silva');
       expect(saved?.bio).toBe('Gosto de pios curtos.');
@@ -61,19 +109,39 @@ describe('UsersService', () => {
         passwordHash: 'hash',
         displayName: 'Ana',
       });
-      await service.updateProfile(user.id, { displayName: 'Ana', bio: 'oi' });
+      await service.updateProfile(user.id, {
+        displayName: 'Ana',
+        bio: 'oi',
+        cover: 'grafite',
+      });
 
       const result = await service.updateProfile(user.id, {
         displayName: 'Ana',
         bio: '',
+        cover: 'grafite',
       });
 
       expect(result.bio).toBe('');
     });
 
+    it('conta nova começa com a capa padrão', async () => {
+      const user = await service.create({
+        username: 'novo',
+        email: 'novo@example.com',
+        passwordHash: 'hash',
+        displayName: 'Novo',
+      });
+
+      expect(user.cover).toBe('grafite');
+    });
+
     it('recusa quando o usuário não existe', async () => {
       await expect(
-        service.updateProfile('nao-existe', { displayName: 'Fulano', bio: '' }),
+        service.updateProfile('nao-existe', {
+          displayName: 'Fulano',
+          bio: '',
+          cover: 'grafite',
+        }),
       ).rejects.toBeInstanceOf(NotFoundException);
     });
   });
