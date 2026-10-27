@@ -5,7 +5,12 @@
 .profile:hover { background: var(--hover); text-decoration: none; }
 .profile:global(.active) { background: var(--hover); }
 .who { display: flex; flex-direction: column; min-width: 0; flex: 1 1 0; line-height: 1.3; }
-.who strong, .who span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.who strong, .handleRow > span:first-child { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.handleRow { display: flex; align-items: center; gap: 6px; min-width: 0; }
+.role {
+  flex: none; padding: 0 6px; border-radius: 4px; background: var(--hover);
+  font-size: 0.65rem; font-weight: 700; letter-spacing: 0.06em; line-height: 1.6;
+}
 
 .trigger {
   flex: none; width: 36px; height: 36px; padding: 0; display: inline-flex; align-items: center; justify-content: center;

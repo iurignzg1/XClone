@@ -10,9 +10,11 @@ import {
   LoginDocument,
   SearchUsersDocument,
   SuggestedUsersDocument,
+  SuspendedUsersDocument,
   ToggleLikeDocument,
   TweetDocument,
   TweetLikesDocument,
+  UnsuspendUserDocument,
   UpdateProfileDocument,
   UserRepliesDocument,
   UserByUsernameDocument,
@@ -97,7 +99,7 @@ export const tweetDetailMock = (id: string, replies: unknown[] = []) => ({
   result: { data: { tweet: { ...tweet({ id }), replies } } },
 });
 
-export const profileMock = (person: typeof ana, bio: string, role = 'USER') => ({
+export const profileMock = (person: typeof ana, bio: string, role = 'USER', suspended = false) => ({
   request: { query: UserByUsernameDocument, variables: { username: person.username } },
   result: {
     data: {
@@ -106,7 +108,7 @@ export const profileMock = (person: typeof ana, bio: string, role = 'USER') => (
         bio,
         cover: 'grafite',
         role,
-        suspended: false,
+        suspended,
         followersCount: 3,
         followingCount: 1,
         followedByMe: false,
@@ -175,6 +177,16 @@ export const searchUsersSlowMock = (query: string, people: (typeof ana)[]) => ({
   delay: 300,
   request: { query: SearchUsersDocument, variables: { query } },
   result: { data: { searchUsers: people.map(asUser) } },
+});
+
+export const suspendedUsersMock = (people: (typeof ana)[]) => ({
+  request: { query: SuspendedUsersDocument },
+  result: { data: { suspendedUsers: people.map(asUser) } },
+});
+
+export const unsuspendMock = (userId: string) => ({
+  request: { query: UnsuspendUserDocument, variables: { input: { userId } } },
+  result: { data: { unsuspendUser: { __typename: 'User', id: userId, suspended: false } } },
 });
 
 export const userTweetsMock = (username: string, tweets: unknown[]) => ({

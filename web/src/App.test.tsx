@@ -20,11 +20,13 @@ import {
   searchUsersMock,
   searchUsersSlowMock,
   suggestedUsersMock,
+  suspendedUsersMock,
   toggleLikeErrorMock,
   toggleLikeMock,
   tweet,
   tweetDetailMock,
   tweetLikesMock,
+  unsuspendMock,
   updateProfileMock,
   userRepliesMock,
   userTweetsMock,
@@ -378,7 +380,8 @@ describe('detalhe do pio e perfil', () => {
     loginAs('ADMIN');
     renderApp('/home', [feedMock([])]);
 
-    expect(await screen.findByText('@ana · ADMIN')).toBeInTheDocument();
+    const account = await screen.findByRole('link', { name: /Ana\s*@ana\s*ADMIN/ });
+    expect(within(account).getByText('ADMIN')).toBeInTheDocument();
   });
 
   it('no próprio perfil, dá para editar nome e bio, que mudam na tela e na barra lateral', async () => {
@@ -562,5 +565,43 @@ describe('composer, sugestões, abas e atalhos', () => {
 
     expect(screen.getByRole('status', { name: 'Carregando pessoas' })).toBeInTheDocument();
     expect(await screen.findByText('Bia')).toBeInTheDocument();
+  });
+});
+
+describe('administração: contas suspensas', () => {
+  it('lista as contas suspensas e reativa uma, com confirmação', async () => {
+    loginAs('ADMIN');
+    renderApp('/admin', [suspendedUsersMock([caio]), unsuspendMock('u3'), suspendedUsersMock([])]);
+
+    expect(await screen.findByText('Caio')).toBeInTheDocument();
+    await userEvent.click(screen.getByRole('button', { name: 'Reativar conta' }));
+    const dialog = screen.getByRole('alertdialog', { name: 'Reativar @caio?' });
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Reativar' }));
+
+    expect(await screen.findByText('Nenhuma conta suspensa.')).toBeInTheDocument();
+  });
+
+  it('sem contas suspensas, avisa', async () => {
+    loginAs('ADMIN');
+    renderApp('/admin', [suspendedUsersMock([])]);
+
+    expect(await screen.findByText('Nenhuma conta suspensa.')).toBeInTheDocument();
+  });
+
+  it('no perfil de quem está suspenso, o ADMIN vê "Reativar conta" e não "Suspender conta"', async () => {
+    loginAs('ADMIN');
+    renderApp('/caio', [profileMock(caio, 'oi', 'USER', true), userTweetsMock('caio', [])]);
+
+    expect(await screen.findByText('conta suspensa')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Reativar conta' })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Suspender conta' })).not.toBeInTheDocument();
+  });
+
+  it('usuário comum não vê "Reativar conta" num perfil suspenso', async () => {
+    loginAs('USER');
+    renderApp('/caio', [profileMock(caio, 'oi', 'USER', true), userTweetsMock('caio', [])]);
+
+    expect(await screen.findByText('conta suspensa')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Reativar conta' })).not.toBeInTheDocument();
   });
 });

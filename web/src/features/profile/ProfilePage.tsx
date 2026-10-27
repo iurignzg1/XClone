@@ -8,6 +8,7 @@ import { SuspendUserDocument, UserByUsernameDocument } from '../../gql/graphql';
 import { attempt } from '../../lib/attempt';
 import { useAuthStore } from '../auth/auth.store';
 import { TweetSkeletons } from '../tweets/TweetSkeleton';
+import { ReactivateButton } from '../admin/ReactivateButton';
 import { Cover } from './Cover';
 import { toCoverId, type CoverId } from './covers';
 import { EditProfileForm } from './EditProfileForm';
@@ -110,6 +111,9 @@ export function ProfilePage() {
                 >
                   Suspender conta
                 </button>
+              )}
+              {me?.role === 'ADMIN' && !isMe && user.suspended && (
+                <ReactivateButton userId={user.id} username={user.username} />
               )}
             </div>
           )}

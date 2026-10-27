@@ -52,9 +52,10 @@ export function AccountMenu({ user }: { user: SessionUser }) {
         <Avatar username={user.username} displayName={user.displayName} size={40} />
         <span className={styles.who}>
           <strong>{user.displayName}</strong>
-          <span className={shared.muted}>
-            @{user.username}
-            {user.role !== 'USER' && ` · ${user.role}`}
+          {/* O @ encurta com reticências; o papel fica sempre inteiro. */}
+          <span className={styles.handleRow}>
+            <span className={shared.muted}>@{user.username}</span>
+            {user.role !== 'USER' && <span className={styles.role}>{user.role}</span>}
           </span>
         </span>
       </NavLink>

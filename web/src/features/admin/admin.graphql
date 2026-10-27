@@ -1,0 +1,7 @@
+query SuspendedUsers {
+  suspendedUsers { id username displayName }
+}
+
+mutation UnsuspendUser($input: UnsuspendUserInput!) {
+  unsuspendUser(input: $input) { id suspended }
+}

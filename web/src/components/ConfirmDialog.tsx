@@ -3,7 +3,8 @@ import { createPortal } from 'react-dom';
 import styles from './ConfirmDialog.module.css';
 import shared from '../styles/shared.module.css';
 
-// Pergunta "tem certeza?" antes de uma ação séria (apagar, sair, suspender).
+// Pergunta "tem certeza?" antes de uma ação séria (apagar, sair, suspender,
+// reativar).
 // O foco começa no Cancelar, para um Enter distraído não confirmar nada; Esc e
 // clique fora também cancelam. Ao fechar, o foco volta para o botão que abriu.
 // Fica num portal no <body> para não herdar estilos nem cliques de onde foi
@@ -12,12 +13,16 @@ export function ConfirmDialog({
   title,
   children,
   confirmLabel,
+  tone = 'danger',
   onConfirm,
   onCancel,
 }: {
   title: string;
   children: ReactNode;
   confirmLabel: string;
+  // 'danger' (vermelho) para ações destrutivas; 'neutral' para as que só
+  // pedem um "tem certeza?" (ex.: reativar uma conta).
+  tone?: 'danger' | 'neutral';
   onConfirm: () => void;
   onCancel: () => void;
 }) {
@@ -60,7 +65,7 @@ export function ConfirmDialog({
           <button ref={cancelRef} className={shared.outline} onClick={onCancel}>
             Cancelar
           </button>
-          <button className={styles.confirm} onClick={onConfirm}>
+          <button className={tone === 'danger' ? styles.confirm : shared.primary} onClick={onConfirm}>
             {confirmLabel}
           </button>
         </div>
