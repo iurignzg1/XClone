@@ -16,6 +16,8 @@ export abstract class UserRepository {
     id: string,
     changes: ProfileChanges,
   ): Promise<User | null>;
+  // Contas suspensas, em ordem alfabética de @ (página de administração).
+  abstract findSuspended(limit: number): Promise<User[]>;
   // Devolve o usuário atualizado, ou null se ele não existe.
   abstract setSuspended(id: string, suspended: boolean): Promise<User | null>;
 }

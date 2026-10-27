@@ -146,6 +146,45 @@ describe('UsersService', () => {
     });
   });
 
+  describe('unsuspend e listSuspended', () => {
+    async function create(username: string) {
+      return service.create({
+        username,
+        email: `${username}@example.com`,
+        passwordHash: 'hash',
+        displayName: username,
+      });
+    }
+
+    it('lista só as contas suspensas, em ordem de @', async () => {
+      const zeca = await create('zeca');
+      const bia = await create('bia');
+      await create('caio');
+      await service.suspend('admin', zeca.id);
+      await service.suspend('admin', bia.id);
+
+      const suspended = await service.listSuspended(10);
+
+      expect(suspended.map((u) => u.username)).toEqual(['bia', 'zeca']);
+    });
+
+    it('reativar tira a suspensão e a conta sai da lista', async () => {
+      const bia = await create('bia');
+      await service.suspend('admin', bia.id);
+
+      const result = await service.unsuspend(bia.id);
+
+      expect(result.suspended).toBe(false);
+      expect(await service.listSuspended(10)).toEqual([]);
+    });
+
+    it('reativar quem não existe dá NotFound', async () => {
+      await expect(service.unsuspend('nao-existe')).rejects.toBeInstanceOf(
+        NotFoundException,
+      );
+    });
+  });
+
   describe('suspend', () => {
     it('marca a conta como suspensa e devolve o usuário atualizado', async () => {
       const alvo = await service.create({

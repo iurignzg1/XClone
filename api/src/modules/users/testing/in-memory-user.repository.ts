@@ -47,6 +47,14 @@ export class InMemoryUserRepository extends UserRepository {
     }
     return Promise.resolve(user ?? null);
   }
+  findSuspended(limit: number) {
+    return Promise.resolve(
+      this.users
+        .filter((u) => u.suspended)
+        .sort((a, b) => a.username.localeCompare(b.username))
+        .slice(0, limit),
+    );
+  }
   setSuspended(id: string, suspended: boolean) {
     const user = this.users.find((u) => u.id === id);
     if (user) user.suspended = suspended;

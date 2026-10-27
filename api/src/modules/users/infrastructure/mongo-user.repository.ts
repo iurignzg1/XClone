@@ -85,6 +85,14 @@ export class MongoUserRepository extends UserRepository {
     return doc && this.toDomain(doc);
   }
 
+  async findSuspended(limit: number): Promise<User[]> {
+    const docs = await this.userModel
+      .find({ suspended: true })
+      .sort({ username: 1 })
+      .limit(limit);
+    return docs.map((doc) => this.toDomain(doc));
+  }
+
   async setSuspended(id: string, suspended: boolean): Promise<User | null> {
     if (!isValidObjectId(id)) return null;
     const doc = await this.userModel.findByIdAndUpdate(

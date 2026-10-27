@@ -58,6 +58,20 @@ export class UsersService {
     return user;
   }
 
+  // Tira a suspensão: a pessoa volta a poder entrar. Também só ADMIN (@Roles).
+  async unsuspend(targetUserId: string): Promise<User> {
+    const user = await this.userRepository.setSuspended(targetUserId, false);
+    if (!user) {
+      throw new NotFoundException('Usuário não encontrado');
+    }
+    return user;
+  }
+
+  // Página de administração: quem está suspenso hoje.
+  listSuspended(limit: number): Promise<User[]> {
+    return this.userRepository.findSuspended(limit);
+  }
+
   // Busca da barra de pesquisa. Termo vazio não busca nada.
   search(term: string, limit: number): Promise<User[]> {
     const clean = term.trim();

@@ -6,6 +6,8 @@ import type { User } from '../domain/user.entity.js';
 import { UsersService } from '../application/users.service.js';
 import { SearchUsersArgs } from './dto/search-users.args.js';
 import { SuspendUserInput } from './dto/suspend-user.input.js';
+import { SuspendedUsersArgs } from './dto/suspended-users.args.js';
+import { UnsuspendUserInput } from './dto/unsuspend-user.input.js';
 import { UpdateProfileInput } from './dto/update-profile.input.js';
 import { UserByUsernameArgs } from './dto/user-by-username.args.js';
 import { MeType } from './types/me.type.js';
@@ -51,5 +53,18 @@ export class UsersResolver {
     @Args('input') input: SuspendUserInput,
   ): Promise<User> {
     return this.usersService.suspend(admin.id, input.userId);
+  }
+
+  // Página de administração: as contas suspensas.
+  @Roles(UserRole.ADMIN)
+  @Query(() => [UserType])
+  suspendedUsers(@Args() args: SuspendedUsersArgs): Promise<User[]> {
+    return this.usersService.listSuspended(args.limit);
+  }
+
+  @Roles(UserRole.ADMIN)
+  @Mutation(() => UserType)
+  unsuspendUser(@Args('input') input: UnsuspendUserInput): Promise<User> {
+    return this.usersService.unsuspend(input.userId);
   }
 }
