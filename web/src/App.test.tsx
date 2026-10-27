@@ -311,6 +311,21 @@ describe('confirmação de ações sérias', () => {
     expect(await screen.findByRole('heading', { name: 'Entrar' })).toBeInTheDocument();
   });
 
+  it('quem saiu e entra de novo começa na home, e não na página onde estava', async () => {
+    loginAs();
+    renderApp('/pio/t1', [tweetDetailMock('t1'), loginMock('ana@x.com', 'senha-segura'), feedMock([])]);
+    await screen.findByText('olá mundo');
+
+    await userEvent.click(screen.getByRole('button', { name: 'Sair da conta' }));
+    await userEvent.click(screen.getByRole('menuitem', { name: 'Sair' }));
+    await userEvent.click(within(screen.getByRole('alertdialog')).getByRole('button', { name: 'Sair' }));
+    await userEvent.type(await screen.findByLabelText('E-mail'), 'ana@x.com');
+    await userEvent.type(screen.getByLabelText('Senha'), 'senha-segura');
+    await userEvent.click(screen.getByRole('button', { name: 'Entrar' }));
+
+    expect(await screen.findByRole('heading', { name: /Feed/ })).toBeInTheDocument();
+  });
+
   it('o menu de sair abre no ícone e fecha com Esc, devolvendo o foco', async () => {
     loginAs();
     renderApp('/home', [feedMock([])]);
