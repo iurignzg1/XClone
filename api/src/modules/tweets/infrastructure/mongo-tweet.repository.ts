@@ -103,7 +103,7 @@ export class MongoTweetRepository extends TweetRepository {
     const doc = await this.tweetModel.findOneAndUpdate(
       { _id: id },
       { $inc: { likesCount: delta } },
-      { new: true },
+      { returnDocument: 'after' },
     );
     return doc && this.toDomain(doc);
   }

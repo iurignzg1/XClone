@@ -27,8 +27,10 @@ export class UpdateProfileInput {
   @MaxLength(BIO_MAX_LENGTH)
   bio: string;
 
-  // Só os nomes da lista fixa de capas são aceitos.
-  @Field()
+  // Só os nomes da lista fixa de capas são aceitos. O tipo vai explícito: o
+  // TypeScript não descreve um union de textos ('grafite' | 'sol' | ...) para
+  // o GraphQL, e sem a dica o schema não monta fora do nest build (ex.: e2e).
+  @Field(() => String)
   @IsIn(PROFILE_COVERS, { message: 'capa desconhecida' })
   cover: ProfileCover;
 }

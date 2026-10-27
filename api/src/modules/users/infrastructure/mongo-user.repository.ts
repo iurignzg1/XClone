@@ -80,7 +80,7 @@ export class MongoUserRepository extends UserRepository {
         bio: changes.bio,
         cover: changes.cover,
       },
-      { new: true },
+      { returnDocument: 'after' },
     );
     return doc && this.toDomain(doc);
   }
@@ -98,7 +98,7 @@ export class MongoUserRepository extends UserRepository {
     const doc = await this.userModel.findByIdAndUpdate(
       id,
       { suspended },
-      { new: true },
+      { returnDocument: 'after' },
     );
     return doc && this.toDomain(doc);
   }
