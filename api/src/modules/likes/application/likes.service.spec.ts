@@ -6,7 +6,7 @@ import type { User } from '../../users/domain/user.entity.js';
 import { LikesService } from './likes.service.js';
 import { InMemoryLikeRepository } from '../testing/in-memory-like.repository.js';
 
-// Só os dois métodos do TweetsService que o LikesService usa.
+// Só os métodos do TweetsService que o LikesService usa.
 function fakeTweetsService(tweet: Tweet) {
   return {
     findById: (id: string) =>
@@ -23,11 +23,16 @@ function fakeTweetsService(tweet: Tweet) {
         likesCount: Math.max(0, tweet.likesCount),
       });
     },
+    // Só o tweet de teste existe; ids desconhecidos somem, como no real.
+    findByIdsInOrder: (ids: string[]) =>
+      Promise.resolve(ids.filter((id) => id === tweet.id).map(() => tweet)),
   } as unknown as TweetsService;
 }
 
 // Devolve os usuários fora de ordem de propósito, como o banco pode fazer.
 const fakeUsersService = {
+  getByUsername: (username: string) =>
+    Promise.resolve({ id: username, username } as User),
   findByIds: (ids: string[]) =>
     Promise.resolve(ids.map((id) => ({ id, username: id }) as User).reverse()),
 } as unknown as UsersService;
@@ -179,6 +184,21 @@ describe('LikesService', () => {
       await expect(service.getLikers('nao-existe', 50)).rejects.toBeInstanceOf(
         NotFoundException,
       );
+    });
+  });
+
+  describe('getLikedTweets', () => {
+    it('lista o que a pessoa curtiu, sem os pios que não existem mais', async () => {
+      await service.toggle('ana', 't1');
+      await likes.add('ana', 'apagado');
+
+      const liked = await service.getLikedTweets('ana', 10);
+
+      expect(liked.map((t) => t.id)).toEqual(['t1']);
+    });
+
+    it('quem não curtiu nada tem a lista vazia', async () => {
+      expect(await service.getLikedTweets('bia', 10)).toEqual([]);
     });
   });
 

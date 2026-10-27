@@ -21,4 +21,12 @@ export abstract class TweetRepository {
   abstract countReplies(parentIds: string[]): Promise<Map<string, number>>;
   // Respostas de um tweet, da mais antiga para a mais nova.
   abstract findReplies(parentId: string, limit: number): Promise<Tweet[]>;
+  // Respostas que um autor escreveu, da mais nova para a mais antiga (aba
+  // "Respostas" do perfil).
+  abstract findRepliesByAuthor(
+    authorId: string,
+    limit: number,
+  ): Promise<Tweet[]>;
+  // Vários tweets de uma vez, em qualquer ordem (quem chama reordena).
+  abstract findByIds(ids: string[]): Promise<Tweet[]>;
 }

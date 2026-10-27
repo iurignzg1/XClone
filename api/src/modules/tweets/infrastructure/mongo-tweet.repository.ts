@@ -26,6 +26,22 @@ export class MongoTweetRepository extends TweetRepository {
     return doc && this.toDomain(doc);
   }
 
+  async findRepliesByAuthor(authorId: string, limit: number): Promise<Tweet[]> {
+    if (!isValidObjectId(authorId)) return [];
+    const docs = await this.tweetModel
+      .find({ authorId, parentId: { $ne: null } })
+      .sort({ _id: -1 })
+      .limit(limit);
+    return docs.map((doc) => this.toDomain(doc));
+  }
+
+  async findByIds(ids: string[]): Promise<Tweet[]> {
+    const docs = await this.tweetModel.find({
+      _id: { $in: ids.filter((id) => isValidObjectId(id)) },
+    });
+    return docs.map((doc) => this.toDomain(doc));
+  }
+
   async findReplies(parentId: string, limit: number): Promise<Tweet[]> {
     if (!isValidObjectId(parentId)) return [];
     const docs = await this.tweetModel

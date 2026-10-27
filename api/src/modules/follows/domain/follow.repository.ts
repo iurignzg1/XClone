@@ -17,6 +17,12 @@ export abstract class FollowRepository {
   abstract countFollowers(userIds: string[]): Promise<Map<string, number>>;
   // Quantas pessoas cada usuário segue, no mesmo formato.
   abstract countFollowing(userIds: string[]): Promise<Map<string, number>>;
+  // Os usuários com mais seguidores, deixando de fora os ids informados
+  // (quem pede e quem ele já segue). Base das sugestões de quem seguir.
+  abstract findMostFollowedIds(
+    excludeIds: string[],
+    limit: number,
+  ): Promise<string[]>;
   // Devolve true se o vínculo foi removido agora, false se não existia.
   abstract remove(followerId: string, followingId: string): Promise<boolean>;
 }

@@ -47,6 +47,18 @@ export class FollowsService {
     );
   }
 
+  // "Quem seguir": as contas mais seguidas que a pessoa ainda não segue (nem
+  // ela mesma), sem contas suspensas. Busca o dobro para sobrar depois do filtro.
+  async getSuggestions(viewerId: string, limit: number): Promise<User[]> {
+    const following = await this.followRepository.findFollowingIds(viewerId);
+    const ids = await this.followRepository.findMostFollowedIds(
+      [viewerId, ...following],
+      limit * 2,
+    );
+    const users = await this.loadInOrder(ids);
+    return users.filter((user) => !user.suspended).slice(0, limit);
+  }
+
   // O banco devolve os usuários em qualquer ordem: refaz a ordem dos ids.
   private async loadInOrder(userIds: string[]): Promise<User[]> {
     const users = await this.usersService.findByIds(userIds);

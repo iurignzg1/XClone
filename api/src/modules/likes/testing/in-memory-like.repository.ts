@@ -34,6 +34,16 @@ export class InMemoryLikeRepository extends LikeRepository {
     );
   }
 
+  findTweetIdsLikedBy(userId: string, limit: number): Promise<string[]> {
+    return Promise.resolve(
+      [...this.likes]
+        .filter((key) => key.startsWith(`${userId}:`))
+        .map((key) => key.split(':')[1])
+        .reverse()
+        .slice(0, limit),
+    );
+  }
+
   // Cada chamada fica registrada para os testes contarem as consultas.
   lookups: string[][] = [];
 

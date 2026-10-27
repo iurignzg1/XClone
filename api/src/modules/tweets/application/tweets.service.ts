@@ -60,6 +60,22 @@ export class TweetsService {
     });
   }
 
+  // Aba "Respostas" do perfil: o que o usuário respondeu, do mais novo ao mais antigo.
+  async findRepliesByUsername(
+    username: string,
+    limit: number,
+  ): Promise<Tweet[]> {
+    const user = await this.usersService.getByUsername(username);
+    return this.tweetRepository.findRepliesByAuthor(user.id, limit);
+  }
+
+  // Vários tweets pelos ids, na mesma ordem dos ids (os que não existem somem).
+  async findByIdsInOrder(ids: string[]): Promise<Tweet[]> {
+    const tweets = await this.tweetRepository.findByIds(ids);
+    const byId = new Map(tweets.map((tweet) => [tweet.id, tweet]));
+    return ids.flatMap((id) => byId.get(id) ?? []);
+  }
+
   findReplies(tweetId: string): Promise<Tweet[]> {
     return this.tweetRepository.findReplies(tweetId, REPLIES_LIMIT);
   }

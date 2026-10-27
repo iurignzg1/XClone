@@ -78,6 +78,43 @@ describe('TweetsService', () => {
     });
   });
 
+  describe('findRepliesByUsername', () => {
+    it('lista só as respostas do usuário, da mais nova para a mais antiga', async () => {
+      const topo = await service.create({ authorId: 'u2', content: 'topo' });
+      await service.create({ authorId: 'u1', content: 'não é resposta' });
+      const r1 = await service.create({
+        authorId: 'u1',
+        content: 'r1',
+        parentId: topo.id,
+      });
+      const r2 = await service.create({
+        authorId: 'u1',
+        content: 'r2',
+        parentId: topo.id,
+      });
+      await service.create({
+        authorId: 'u2',
+        content: 'de outro',
+        parentId: topo.id,
+      });
+
+      const replies = await service.findRepliesByUsername('iuri', 10);
+
+      expect(replies.map((t) => t.id)).toEqual([r2.id, r1.id]);
+    });
+  });
+
+  describe('findByIdsInOrder', () => {
+    it('devolve na ordem dos ids e ignora os que não existem', async () => {
+      const a = await service.create({ authorId: 'u1', content: 'a' });
+      const b = await service.create({ authorId: 'u1', content: 'b' });
+
+      const tweets = await service.findByIdsInOrder([b.id, 'sumiu', a.id]);
+
+      expect(tweets.map((t) => t.id)).toEqual([b.id, a.id]);
+    });
+  });
+
   describe('findReplies', () => {
     it('devolve só as respostas do tweet informado', async () => {
       const a = await service.create({ authorId: 'u1', content: 'a' });

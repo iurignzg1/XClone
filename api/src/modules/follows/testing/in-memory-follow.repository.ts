@@ -41,6 +41,20 @@ export class InMemoryFollowRepository extends FollowRepository {
     );
   }
 
+  findMostFollowedIds(excludeIds: string[], limit: number): Promise<string[]> {
+    const totals = new Map<string, number>();
+    for (const key of this.follows) {
+      const id = key.split(':')[1];
+      if (!excludeIds.includes(id)) totals.set(id, (totals.get(id) ?? 0) + 1);
+    }
+    return Promise.resolve(
+      [...totals]
+        .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
+        .slice(0, limit)
+        .map(([id]) => id),
+    );
+  }
+
   remove(followerId: string, followingId: string): Promise<boolean> {
     return Promise.resolve(this.follows.delete(`${followerId}:${followingId}`));
   }

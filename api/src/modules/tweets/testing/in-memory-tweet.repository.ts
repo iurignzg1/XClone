@@ -62,6 +62,19 @@ export class InMemoryTweetRepository extends TweetRepository {
     return Promise.resolve(totals);
   }
 
+  findRepliesByAuthor(authorId: string, limit: number): Promise<Tweet[]> {
+    return Promise.resolve(
+      this.tweets
+        .filter((t) => t.authorId === authorId && t.parentId !== null)
+        .reverse()
+        .slice(0, limit),
+    );
+  }
+
+  findByIds(ids: string[]): Promise<Tweet[]> {
+    return Promise.resolve(this.tweets.filter((t) => ids.includes(t.id)));
+  }
+
   findReplies(parentId: string, limit: number): Promise<Tweet[]> {
     return Promise.resolve(
       this.tweets.filter((t) => t.parentId === parentId).slice(0, limit),

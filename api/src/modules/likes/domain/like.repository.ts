@@ -7,6 +7,11 @@ export abstract class LikeRepository {
   abstract removeAllForTweet(tweetId: string): Promise<void>;
   // Ids de quem curtiu o tweet, da curtida mais recente para a mais antiga.
   abstract findLikerIds(tweetId: string, limit: number): Promise<string[]>;
+  // Ids dos tweets que o usuário curtiu, da curtida mais recente para a mais antiga.
+  abstract findTweetIdsLikedBy(
+    userId: string,
+    limit: number,
+  ): Promise<string[]>;
   // Entre os tweets informados, quais o usuário curtiu (uma consulta só).
   abstract findLikedTweetIds(
     userId: string,

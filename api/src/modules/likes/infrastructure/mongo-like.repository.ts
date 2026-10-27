@@ -31,6 +31,15 @@ export class MongoLikeRepository extends LikeRepository {
     return docs.map((doc) => doc.userId.toString());
   }
 
+  async findTweetIdsLikedBy(userId: string, limit: number): Promise<string[]> {
+    const docs = await this.likeModel
+      .find({ userId })
+      .sort({ _id: -1 })
+      .limit(limit)
+      .select('tweetId');
+    return docs.map((doc) => doc.tweetId.toString());
+  }
+
   async findLikedTweetIds(
     userId: string,
     tweetIds: string[],

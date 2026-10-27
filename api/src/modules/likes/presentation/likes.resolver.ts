@@ -17,6 +17,7 @@ import {
   LikesService,
   ToggleLikeResult,
 } from '../application/likes.service.js';
+import { UserTweetsArgs } from '../../tweets/presentation/dto/user-tweets.args.js';
 import { ToggleLikeInput } from './dto/toggle-like.input.js';
 import { TweetLikesArgs } from './dto/tweet-likes.args.js';
 import { ToggleLikePayload } from './types/toggle-like-payload.type.js';
@@ -46,6 +47,12 @@ export class LikesResolver {
   @Query(() => [UserType])
   tweetLikes(@Args() args: TweetLikesArgs): Promise<User[]> {
     return this.likesService.getLikers(args.tweetId, args.limit);
+  }
+
+  // Aba "Curtidas" do perfil.
+  @Query(() => [TweetType])
+  likedTweets(@Args() args: UserTweetsArgs): Promise<Tweet[]> {
+    return this.likesService.getLikedTweets(args.username, args.limit);
   }
 
   @Mutation(() => ToggleLikePayload)

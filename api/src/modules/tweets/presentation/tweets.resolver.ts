@@ -65,6 +65,12 @@ export class TweetsResolver {
     return this.tweetsService.findByUsername(args.username, args.limit);
   }
 
+  // Aba "Respostas" do perfil.
+  @Query(() => [TweetType])
+  userReplies(@Args() args: UserTweetsArgs): Promise<Tweet[]> {
+    return this.tweetsService.findRepliesByUsername(args.username, args.limit);
+  }
+
   // Campo calculado: só é buscado quando o cliente pede `replies` na query.
   @ResolveField(() => [TweetType])
   replies(@Parent() tweet: Tweet): Promise<Tweet[]> {

@@ -50,6 +50,27 @@ export class MongoFollowRepository extends FollowRepository {
     return docs.map((doc) => doc.followingId.toString());
   }
 
+  async findMostFollowedIds(
+    excludeIds: string[],
+    limit: number,
+  ): Promise<string[]> {
+    const rows = await this.followModel.aggregate<{ _id: Types.ObjectId }>([
+      {
+        $match: {
+          followingId: {
+            $nin: excludeIds
+              .filter((id) => isValidObjectId(id))
+              .map((id) => new Types.ObjectId(id)),
+          },
+        },
+      },
+      { $group: { _id: '$followingId', total: { $sum: 1 } } },
+      { $sort: { total: -1, _id: 1 } },
+      { $limit: limit },
+    ]);
+    return rows.map((row) => row._id.toString());
+  }
+
   async findFollowedIds(
     followerId: string,
     userIds: string[],

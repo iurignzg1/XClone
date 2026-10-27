@@ -7,6 +7,7 @@ import {
   type TweetDeletedEvent,
 } from '../../tweets/domain/tweet-deleted.event.js';
 import { UsersService } from '../../users/application/users.service.js';
+import type { Tweet } from '../../tweets/domain/tweet.entity.js';
 import type { User } from '../../users/domain/user.entity.js';
 import { LikeRepository } from '../domain/like.repository.js';
 
@@ -31,6 +32,17 @@ export class LikesService {
     // O banco devolve os usuários em qualquer ordem: refaz a ordem das curtidas.
     const byId = new Map(users.map((user) => [user.id, user]));
     return userIds.flatMap((id) => byId.get(id) ?? []);
+  }
+
+  // Aba "Curtidas" do perfil: o que a pessoa curtiu, da curtida mais recente
+  // para a mais antiga (pios apagados depois não aparecem).
+  async getLikedTweets(username: string, limit: number): Promise<Tweet[]> {
+    const user = await this.usersService.getByUsername(username);
+    const tweetIds = await this.likeRepository.findTweetIdsLikedBy(
+      user.id,
+      limit,
+    );
+    return this.tweetsService.findByIdsInOrder(tweetIds);
   }
 
   // Um loader por requisição: junta todos os `likedByMe` pedidos na mesma

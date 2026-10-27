@@ -87,6 +87,32 @@ describe('FollowsService', () => {
     });
   });
 
+  describe('getSuggestions', () => {
+    beforeEach(async () => {
+      // bia tem 3 seguidores, caio 2, duda 1. ana já segue caio.
+      for (const fan of ['x', 'y', 'z']) await repository.add(fan, 'bia');
+      for (const fan of ['x', 'y']) await repository.add(fan, 'caio');
+      await repository.add('x', 'duda');
+      await repository.add('ana', 'caio');
+    });
+
+    it('sugere os mais seguidos que a pessoa ainda não segue', async () => {
+      const suggestions = await service.getSuggestions('ana', 3);
+
+      expect(suggestions.map((u) => u.id)).toEqual(['bia', 'duda']);
+    });
+
+    it('nunca sugere a própria pessoa', async () => {
+      const suggestions = await service.getSuggestions('bia', 3);
+
+      expect(suggestions.map((u) => u.id)).not.toContain('bia');
+    });
+
+    it('respeita o limite', async () => {
+      expect(await service.getSuggestions('ana', 1)).toHaveLength(1);
+    });
+  });
+
   describe('unfollow', () => {
     it('remove o vínculo', async () => {
       await service.follow('eu', 'existente');

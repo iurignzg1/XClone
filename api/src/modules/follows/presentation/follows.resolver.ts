@@ -15,6 +15,7 @@ import { UserType } from '../../users/presentation/types/user.type.js';
 import { FollowsService } from '../application/follows.service.js';
 import { FollowListArgs } from './dto/follow-list.args.js';
 import { FollowUserInput } from './dto/follow-user.input.js';
+import { SuggestionsArgs } from './dto/suggestions.args.js';
 
 // O contexto do GraphQL vive uma requisição inteira: é onde guardamos os loaders.
 interface FollowsGqlContext {
@@ -60,6 +61,15 @@ export class FollowsResolver {
     context.followingCountLoader ??=
       this.followsService.createFollowingCountLoader();
     return context.followingCountLoader.load(user.id);
+  }
+
+  // "Quem seguir" da barra lateral, para quem está logado.
+  @Query(() => [UserType])
+  suggestedUsers(
+    @CurrentUser() viewer: User,
+    @Args() args: SuggestionsArgs,
+  ): Promise<User[]> {
+    return this.followsService.getSuggestions(viewer.id, args.limit);
   }
 
   // Quem segue o perfil (aba "seguidores").
