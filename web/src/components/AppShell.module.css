@@ -17,6 +17,11 @@
   color: var(--ink); font-size: 1.05rem;
 }
 .item:hover { background: var(--hover); text-decoration: none; }
+/* Número de notificações novas: pequeno, em tinta, alinhado ao texto. */
+.badge {
+  min-width: 20px; padding: 1px 6px; border-radius: 6px; background: var(--ink); color: var(--bg);
+  font-size: 0.75rem; font-weight: 700; text-align: center; line-height: 18px;
+}
 /* NavLink põe a classe "active" na página atual. */
 .item:global(.active) { font-weight: 700; background: var(--hover); }
 

@@ -6,6 +6,7 @@ import { AdminPage } from './features/admin/AdminPage';
 import { LoginPage } from './features/auth/LoginPage';
 import { SignupPage } from './features/auth/SignupPage';
 import { useRestoreSession } from './features/auth/useRestoreSession';
+import { NotificationsPage } from './features/notifications/NotificationsPage';
 import { ProfilePage } from './features/profile/ProfilePage';
 import { SearchPage } from './features/search/SearchPage';
 import { HomePage } from './features/tweets/HomePage';
@@ -34,6 +35,7 @@ export default function App() {
         <Route element={<AppShell />}>
           <Route path="/home" element={<HomePage />} />
           <Route path="/pesquisar" element={<SearchPage />} />
+          <Route path="/notificacoes" element={<NotificationsPage />} />
           <Route path="/pio/:id" element={<TweetPage />} />
           <Route path="/tweet/:id" element={<TweetRedirect />} />
           <Route path="/:username" element={<ProfilePage />} />

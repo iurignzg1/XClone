@@ -1,3 +1,4 @@
+import { useQuery } from '@apollo/client/react';
 import type { ReactNode } from 'react';
 import { NavLink, Outlet } from 'react-router';
 import { useAuthStore } from '../features/auth/auth.store';
@@ -8,7 +9,8 @@ import { WIDE_LAYOUT } from '../lib/layout';
 import { useMediaQuery } from '../lib/useMediaQuery';
 import { ThemeToggle } from '../features/ui/ThemeToggle';
 import { AccountMenu } from './AccountMenu';
-import { HomeIcon, SearchIcon, ShieldIcon } from './icons';
+import { UnreadNotificationsCountDocument } from '../gql/graphql';
+import { BellIcon, HomeIcon, SearchIcon, ShieldIcon } from './icons';
 import { Logo } from './Logo';
 import styles from './AppShell.module.css';
 import shared from '../styles/shared.module.css';
@@ -18,6 +20,31 @@ function Item({ to, icon, children }: { to: string; icon: ReactNode; children: R
     <NavLink to={to} end className={styles.item}>
       {icon}
       <span>{children}</span>
+    </NavLink>
+  );
+}
+
+// De quanto em quanto tempo o sino pergunta à API se há novidade.
+const NOTIFICATIONS_POLL_MS = 30_000;
+
+// "Notificações", com o número de novidades ao lado.
+function NotificationsItem() {
+  const { data } = useQuery(UnreadNotificationsCountDocument, { pollInterval: NOTIFICATIONS_POLL_MS });
+  const unread = data?.unreadNotificationsCount ?? 0;
+  return (
+    <NavLink
+      to="/notificacoes"
+      end
+      className={styles.item}
+      aria-label={unread > 0 ? `Notificações (${unread} novas)` : 'Notificações'}
+    >
+      <BellIcon />
+      <span>Notificações</span>
+      {unread > 0 && (
+        <span className={styles.badge} aria-hidden="true">
+          {unread > 9 ? '9+' : unread}
+        </span>
+      )}
     </NavLink>
   );
 }
@@ -41,6 +68,7 @@ export function AppShell() {
         <nav className={styles.nav} aria-label="Principal">
           <Item to="/home" icon={<HomeIcon />}>Home</Item>
           <Item to="/pesquisar" icon={<SearchIcon />}>Pesquisar</Item>
+          <NotificationsItem />
           {user?.role === 'ADMIN' && <Item to="/admin" icon={<ShieldIcon />}>Admin</Item>}
         </nav>
         <button className={`${shared.primary} ${styles.publish}`} onClick={openComposer}>

@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { OnEvent } from '@nestjs/event-emitter';
+import { EventEmitter2, OnEvent } from '@nestjs/event-emitter';
 import DataLoader from 'dataloader';
 import { TweetsService } from '../../tweets/application/tweets.service.js';
 import {
@@ -9,6 +9,11 @@ import {
 import { UsersService } from '../../users/application/users.service.js';
 import type { Tweet } from '../../tweets/domain/tweet.entity.js';
 import type { User } from '../../users/domain/user.entity.js';
+import {
+  TWEET_LIKED,
+  TWEET_UNLIKED,
+  type LikeEvent,
+} from '../domain/like.events.js';
 import { LikeRepository } from '../domain/like.repository.js';
 
 export interface ToggleLikeResult {
@@ -22,6 +27,7 @@ export class LikesService {
     private readonly likeRepository: LikeRepository,
     private readonly tweetsService: TweetsService,
     private readonly usersService: UsersService,
+    private readonly events: EventEmitter2,
   ) {}
 
   // Quem curtiu o tweet, da curtida mais recente para a mais antiga.
@@ -62,15 +68,20 @@ export class LikesService {
   async toggle(userId: string, tweetId: string): Promise<ToggleLikeResult> {
     const tweet = await this.tweetsService.findById(tweetId);
 
+    // Anunciado só quando a curtida realmente mudou (nunca em dobro).
+    const event: LikeEvent = { userId, tweetId, tweetAuthorId: tweet.authorId };
+
     const removed = await this.likeRepository.remove(userId, tweetId);
     if (removed) {
       const updated = await this.tweetsService.addLikes(tweetId, -1);
+      await this.events.emitAsync(TWEET_UNLIKED, event);
       return { liked: false, likesCount: updated?.likesCount ?? 0 };
     }
 
     const added = await this.likeRepository.add(userId, tweetId);
     if (added) {
       const updated = await this.tweetsService.addLikes(tweetId, 1);
+      await this.events.emitAsync(TWEET_LIKED, event);
       return {
         liked: true,
         likesCount: updated?.likesCount ?? tweet.likesCount,

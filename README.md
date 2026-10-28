@@ -1,6 +1,6 @@
 # Pio
 
-Um clone do X (antigo Twitter): publicar pios, responder, curtir, seguir pessoas e ver um feed com quem você segue. Tem também papéis de moderação (MODERATOR e ADMIN).
+Um clone do X (antigo Twitter): publicar pios, responder, curtir, seguir pessoas, ver um feed com quem você segue e receber notificações. Tem também papéis de moderação (MODERATOR e ADMIN).
 
 O repositório tem duas partes:
 
@@ -50,7 +50,7 @@ A API fica em <http://localhost:3000/graphql>. Abrindo esse endereço no navegad
 npm run seed -- --admin <seu_username>
 ```
 
-O seed cria 20 contas, com pios, respostas, curtidas e seguidores, todas com a senha `pio-seed-123`. Com `--admin`, a sua conta (crie-a antes pelo front) vira ADMIN e passa a seguir, e ser seguida por, parte dessas contas.
+O seed cria 20 contas, com pios, respostas, curtidas, seguidores e as notificações correspondentes, todas com a senha `pio-seed-123`. Com `--admin`, a sua conta (crie-a antes pelo front) vira ADMIN e passa a seguir, e ser seguida por, parte dessas contas.
 
 `npm run seed:limpar` apaga tudo o que o seed criou e deixa o resto do banco como estava.
 
@@ -86,13 +86,14 @@ O que os e2e cobrem:
 - **Curtidas:** curtir e descurtir, contagem por pessoa, cliques simultâneos, pio inexistente e o que acontece ao apagar o pio.
 - **Feed e respostas:** seguir alguém muda o feed, as respostas ficam fora dele, a paginação pelo cursor e as respostas no pio e na aba do perfil.
 - **Busca:** pelo começo do @ ou parte do nome, sem contas suspensas, com o termo tratado como texto (e não como expressão regular).
+- **Notificações:** agrupamento das curtidas, ordem, nada para si mesmo, desfazer sem spam, marcar como lidas e pio apagado.
 - **Proteções:** cabeçalhos do helmet, limite de complexidade, e a API em modo produção sem introspecção nem GraphiQL.
 
 ## Arquitetura
 
 ### API
 
-Cada assunto é um módulo do Nest (`auth`, `users`, `tweets`, `likes`, `follows`, `feed`), e cada módulo tem as mesmas quatro camadas:
+Cada assunto é um módulo do Nest (`auth`, `users`, `tweets`, `likes`, `follows`, `feed`, `notifications`), e cada módulo tem as mesmas quatro camadas:
 
 ```
 modules/tweets/
@@ -106,6 +107,13 @@ modules/tweets/
 O service depende do repositório **abstrato**. É o módulo que decide qual implementação entra: a do Mongo em produção, a em memória nos testes.
 
 Os módulos conversam entre si por eventos. Por exemplo, quando um pio é apagado, o módulo de curtidas apaga as curtidas dele, sem que `tweets` precise conhecer `likes`.
+
+As notificações seguem o mesmo padrão. `likes`, `tweets` e `follows` só anunciam o que aconteceu ("curtiu", "respondeu", "começou a seguir"), e o módulo `notifications` escuta e grava. Algumas regras:
+
+- **Curtidas agrupadas:** as do mesmo pio viram uma linha só ("Ana e mais 4 pessoas curtiram seu pio").
+- **Sem aviso de si mesmo:** ninguém é avisado de curtir ou responder o próprio pio.
+- **Desfazer apaga o aviso:** descurtir ou deixar de seguir apaga o aviso correspondente, então repetir a ação gera no máximo um. Deixar de seguir não avisa ninguém, de propósito.
+- **Falha não atrapalha:** se gravar a notificação der erro, a ação original continua valendo.
 
 #### Autenticação e permissões
 

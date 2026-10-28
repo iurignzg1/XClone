@@ -1,4 +1,5 @@
 import { NotFoundException } from '@nestjs/common';
+import { silentEvents } from '../../../common/testing/silent-events.js';
 import { TweetsService } from '../../tweets/application/tweets.service.js';
 import type { Tweet } from '../../tweets/domain/tweet.entity.js';
 import { UsersService } from '../../users/application/users.service.js';
@@ -60,6 +61,7 @@ describe('LikesService', () => {
       likes,
       fakeTweetsService(tweet),
       fakeUsersService,
+      silentEvents,
     );
   });
 

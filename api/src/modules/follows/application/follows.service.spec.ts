@@ -1,4 +1,5 @@
 import { BadRequestException, NotFoundException } from '@nestjs/common';
+import { silentEvents } from '../../../common/testing/silent-events.js';
 import { UsersService } from '../../users/application/users.service.js';
 import type { User } from '../../users/domain/user.entity.js';
 import { FollowsService } from './follows.service.js';
@@ -34,7 +35,7 @@ describe('FollowsService', () => {
 
   beforeEach(() => {
     repository = new InMemoryFollowRepository();
-    service = new FollowsService(repository, fakeUsersService);
+    service = new FollowsService(repository, fakeUsersService, silentEvents);
   });
 
   describe('follow', () => {

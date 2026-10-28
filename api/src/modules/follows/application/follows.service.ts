@@ -3,9 +3,15 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
+import { EventEmitter2 } from '@nestjs/event-emitter';
 import DataLoader from 'dataloader';
 import { UsersService } from '../../users/application/users.service.js';
 import type { User } from '../../users/domain/user.entity.js';
+import {
+  USER_FOLLOWED,
+  USER_UNFOLLOWED,
+  type FollowEvent,
+} from '../domain/follow.events.js';
 import { FollowRepository } from '../domain/follow.repository.js';
 
 @Injectable()
@@ -13,6 +19,7 @@ export class FollowsService {
   constructor(
     private readonly followRepository: FollowRepository,
     private readonly usersService: UsersService,
+    private readonly events: EventEmitter2,
   ) {}
 
   // Idempotente: seguir quem já se segue não dá erro nem duplica.
@@ -24,7 +31,11 @@ export class FollowsService {
     if (!target) {
       throw new NotFoundException('Usuário não encontrado');
     }
-    await this.followRepository.add(followerId, targetUserId);
+    const added = await this.followRepository.add(followerId, targetUserId);
+    if (added) {
+      const event: FollowEvent = { followerId, followedId: targetUserId };
+      await this.events.emitAsync(USER_FOLLOWED, event);
+    }
   }
 
   getFollowingIds(userId: string): Promise<string[]> {
@@ -68,7 +79,14 @@ export class FollowsService {
 
   // Idempotente: deixar de seguir quem não se segue também não dá erro.
   async unfollow(followerId: string, targetUserId: string): Promise<void> {
-    await this.followRepository.remove(followerId, targetUserId);
+    const removed = await this.followRepository.remove(
+      followerId,
+      targetUserId,
+    );
+    if (removed) {
+      const event: FollowEvent = { followerId, followedId: targetUserId };
+      await this.events.emitAsync(USER_UNFOLLOWED, event);
+    }
   }
 
   // Loader por requisição para o "eu sigo essa pessoa?" de quem está logado:

@@ -17,6 +17,9 @@ import {
   loginMock,
   logout,
   manyTweets,
+  markReadMock,
+  notification,
+  notificationsMock,
   profileMock,
   searchUsersMock,
   searchUsersSlowMock,
@@ -27,6 +30,7 @@ import {
   tweet,
   tweetDetailMock,
   tweetLikesMock,
+  unreadCountMock,
   unsuspendMock,
   updateProfileMock,
   userRepliesMock,
@@ -544,5 +548,68 @@ describe('administração: contas suspensas', () => {
 
     expect(await screen.findByText('conta suspensa')).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Reativar conta' })).not.toBeInTheDocument();
+  });
+});
+
+describe('notificações', () => {
+  it('mostra curtidas agrupadas, respostas e novos seguidores, cada um levando ao lugar certo', async () => {
+    loginAs();
+    renderApp('/notificacoes', [
+      notificationsMock([
+        notification({ id: 'like-t1', actorsCount: 3, actors: [asUser(bia), asUser(caio)] }),
+        notification({ id: 'n2', type: 'REPLY', tweet: { __typename: 'Tweet', id: 'r1', content: 'concordo!' } }),
+        notification({ id: 'n3', type: 'FOLLOW', actors: [asUser(caio)], tweet: null, read: true }),
+      ]),
+      markReadMock(),
+    ]);
+
+    const like = await screen.findByRole('link', { name: /Bia e mais 2 pessoas curtiram seu pio/ });
+    const reply = screen.getByRole('link', { name: /Bia respondeu seu pio/ });
+    const follow = screen.getByRole('link', { name: /Caio começou a seguir você/ });
+
+    expect(like).toHaveAttribute('href', '/pio/t1');
+    expect(within(like).getByText('olá mundo')).toBeInTheDocument();
+    expect(reply).toHaveAttribute('href', '/pio/r1');
+    expect(within(reply).getByText('concordo!')).toBeInTheDocument();
+    expect(follow).toHaveAttribute('href', '/caio');
+    // As duas primeiras são novas; a de seguir já tinha sido vista.
+    expect(screen.getAllByRole('img', { name: 'nova' })).toHaveLength(2);
+  });
+
+  it('duas pessoas aparecem pelo nome; uma pessoa só, no singular', async () => {
+    loginAs();
+    renderApp('/notificacoes', [
+      notificationsMock([
+        notification({ id: 'like-t1', actorsCount: 2, actors: [asUser(bia), asUser(caio)] }),
+        notification({ id: 'like-t2', read: true, tweet: { __typename: 'Tweet', id: 't2', content: 'outro' } }),
+      ]),
+      markReadMock(),
+    ]);
+
+    expect(await screen.findByRole('link', { name: /Bia e Caio curtiram seu pio/ })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /Bia curtiu seu pio/ })).toBeInTheDocument();
+  });
+
+  it('o sino mostra quantas novidades há; abrir a página zera o número', async () => {
+    loginAs();
+    renderApp('/home', [
+      feedMock([]),
+      unreadCountMock(3),
+      notificationsMock([notification()]),
+      markReadMock(),
+    ]);
+
+    const bell = await screen.findByRole('link', { name: 'Notificações (3 novas)' });
+    await userEvent.click(bell);
+
+    expect(await screen.findByRole('link', { name: /Bia curtiu seu pio/ })).toBeInTheDocument();
+    expect(await screen.findByRole('link', { name: 'Notificações' })).toBeInTheDocument();
+  });
+
+  it('sem notificações, explica o que vai aparecer ali', async () => {
+    loginAs();
+    renderApp('/notificacoes', [notificationsMock([])]);
+
+    expect(await screen.findByText(/Quando alguém curtir, responder ou seguir você/)).toBeInTheDocument();
   });
 });

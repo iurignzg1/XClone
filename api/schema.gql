@@ -50,6 +50,7 @@ type Mutation {
   login(input: LoginInput!): AuthPayload!
   logout(input: RefreshTokenInput!): Boolean!
   logoutAll: Boolean!
+  markNotificationsRead: Boolean!
   refreshSession(input: RefreshTokenInput!): AuthPayload!
   signup(input: SignupInput!): AuthPayload!
   suspendUser(input: SuspendUserInput!): User!
@@ -59,17 +60,35 @@ type Mutation {
   updateProfile(input: UpdateProfileInput!): Me!
 }
 
+type Notification {
+  actors: [User!]!
+  actorsCount: Int!
+  createdAt: DateTime!
+  id: ID!
+  read: Boolean!
+  tweet: Tweet
+  type: NotificationType!
+}
+
+enum NotificationType {
+  FOLLOW
+  LIKE
+  REPLY
+}
+
 type Query {
   feed(after: ID, limit: Int! = 20): [Tweet!]!
   followers(limit: Int! = 50, username: String!): [User!]!
   following(limit: Int! = 50, username: String!): [User!]!
   likedTweets(limit: Int! = 20, username: String!): [Tweet!]!
   me: Me!
+  notifications(limit: Int! = 20): [Notification!]!
   searchUsers(limit: Int! = 10, query: String!): [User!]!
   suggestedUsers(limit: Int! = 3): [User!]!
   suspendedUsers(limit: Int! = 50): [User!]!
   tweet(id: ID!): Tweet!
   tweetLikes(limit: Int! = 50, tweetId: ID!): [User!]!
+  unreadNotificationsCount: Int!
   userByUsername(username: String!): User!
   userReplies(limit: Int! = 20, username: String!): [Tweet!]!
   userTweets(limit: Int! = 20, username: String!): [Tweet!]!

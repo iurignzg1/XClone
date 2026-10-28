@@ -3,6 +3,10 @@ import DataLoader from 'dataloader';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { UsersService } from '../../users/application/users.service.js';
 import {
+  REPLY_CREATED,
+  type ReplyCreatedEvent,
+} from '../domain/reply-created.event.js';
+import {
   TWEET_DELETED,
   type TweetDeletedEvent,
 } from '../domain/tweet-deleted.event.js';
@@ -27,13 +31,22 @@ export class TweetsService {
 
   async create(data: CreateTweetData): Promise<Tweet> {
     // Uma resposta só faz sentido se o tweet respondido existir.
-    if (data.parentId) {
-      const parent = await this.tweetRepository.findById(data.parentId);
-      if (!parent) {
-        throw new NotFoundException('Tweet respondido não encontrado');
-      }
+    const parent = data.parentId
+      ? await this.tweetRepository.findById(data.parentId)
+      : null;
+    if (data.parentId && !parent) {
+      throw new NotFoundException('Tweet respondido não encontrado');
     }
-    return this.tweetRepository.create(data);
+    const tweet = await this.tweetRepository.create(data);
+    if (parent) {
+      const event: ReplyCreatedEvent = {
+        replyId: tweet.id,
+        authorId: tweet.authorId,
+        parentAuthorId: parent.authorId,
+      };
+      await this.events.emitAsync(REPLY_CREATED, event);
+    }
+    return tweet;
   }
 
   async findById(id: string): Promise<Tweet> {
@@ -57,6 +70,16 @@ export class TweetsService {
     return new DataLoader<string, number>(async (tweetIds) => {
       const totals = await this.tweetRepository.countReplies([...tweetIds]);
       return tweetIds.map((id) => totals.get(id) ?? 0);
+    });
+  }
+
+  // Um loader por requisição para buscar pios pelo id (ex.: o pio de cada
+  // notificação) numa consulta só. Pio apagado vira null.
+  createByIdLoader(): DataLoader<string, Tweet | null> {
+    return new DataLoader<string, Tweet | null>(async (ids) => {
+      const tweets = await this.tweetRepository.findByIds([...ids]);
+      const byId = new Map(tweets.map((tweet) => [tweet.id, tweet]));
+      return ids.map((id) => byId.get(id) ?? null);
     });
   }
 

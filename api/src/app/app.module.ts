@@ -24,6 +24,7 @@ import { AuthModule } from '../modules/auth/auth.module.js';
 import { FeedModule } from '../modules/feed/feed.module.js';
 import { FollowsModule } from '../modules/follows/follows.module.js';
 import { LikesModule } from '../modules/likes/likes.module.js';
+import { NotificationsModule } from '../modules/notifications/notifications.module.js';
 import { TweetsModule } from '../modules/tweets/tweets.module.js';
 import { UsersModule } from '../modules/users/users.module.js';
 
@@ -88,6 +89,7 @@ const MAX_QUERY_COMPLEXITY = 2000;
     LikesModule,
     FollowsModule,
     FeedModule,
+    NotificationsModule,
   ],
   providers: [
     // Antes dos guards de autenticação (AuthModule): quem passou do limite é

@@ -154,6 +154,7 @@ async function clean(db) {
   const removed = {
     curtidas: (await db.collection('likes').deleteMany({ $or: [{ userId: { $in: ids } }, { tweetId: { $in: tweetIds } }] })).deletedCount,
     vinculos: (await db.collection('follows').deleteMany({ $or: [{ followerId: { $in: ids } }, { followingId: { $in: ids } }] })).deletedCount,
+    notificacoes: (await db.collection('notifications').deleteMany({ $or: [{ actorId: { $in: ids } }, { recipientId: { $in: ids } }] })).deletedCount,
     pios: (await db.collection('tweets').deleteMany({ _id: { $in: tweetIds } })).deletedCount,
     sessoes: (await db.collection('sessions').deleteMany({ userId: { $in: ids } })).deletedCount,
     pessoas: (await db.collection('users').deleteMany({ _id: { $in: ids } })).deletedCount,
@@ -258,12 +259,28 @@ async function seed(db, adminUsername) {
   }
   await db.collection('follows').insertMany(follows);
 
+  // Notificações: o seed grava direto no banco, sem passar pela API, então os
+  // eventos que geram as notificações não acontecem. Criamos aqui as mesmas
+  // que a API teria criado (já como não lidas).
+  const authorOf = new Map([...tweets, ...realTopLevel].map((t) => [t._id.toString(), t.authorId]));
+  const notifications = [
+    ...likes.map((l) => ({ type: 'LIKE', recipientId: authorOf.get(l.tweetId.toString()), actorId: l.userId, tweetId: l.tweetId, createdAt: l.createdAt })),
+    ...tweets
+      .filter((t) => t.parentId)
+      .map((t) => ({ type: 'REPLY', recipientId: authorOf.get(t.parentId.toString()), actorId: t.authorId, tweetId: t._id, createdAt: t.createdAt })),
+    ...follows.map((f) => ({ type: 'FOLLOW', recipientId: f.followingId, actorId: f.followerId, tweetId: null, createdAt: f.createdAt })),
+  ]
+    .filter((n) => !n.recipientId.equals(n.actorId))
+    .map((n) => ({ ...n, readAt: null }));
+  await db.collection('notifications').insertMany(notifications);
+
   console.log('Seed criado:', {
     pessoas: users.length,
     pios: tweets.filter((t) => !t.parentId).length,
     respostas: tweets.filter((t) => t.parentId).length,
     curtidas: likes.length,
     vinculos: follows.length,
+    notificacoes: notifications.length,
     admin: admin ? `@${admin.username}` : 'nenhum (use --admin <usuario>)',
   });
   console.log(`Senha de todas as contas do seed: ${PASSWORD}`);

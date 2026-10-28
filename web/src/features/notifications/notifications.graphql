@@ -1,0 +1,19 @@
+query Notifications {
+  notifications {
+    id
+    type
+    actorsCount
+    createdAt
+    read
+    actors { id username displayName }
+    tweet { id content }
+  }
+}
+
+query UnreadNotificationsCount {
+  unreadNotificationsCount
+}
+
+mutation MarkNotificationsRead {
+  markNotificationsRead
+}

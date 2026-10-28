@@ -8,12 +8,15 @@ import {
   FollowingDocument,
   LikedTweetsDocument,
   LoginDocument,
+  MarkNotificationsReadDocument,
+  NotificationsDocument,
   SearchUsersDocument,
   SuggestedUsersDocument,
   SuspendedUsersDocument,
   ToggleLikeDocument,
   TweetDocument,
   TweetLikesDocument,
+  UnreadNotificationsCountDocument,
   UnsuspendUserDocument,
   UpdateProfileDocument,
   UserRepliesDocument,
@@ -224,3 +227,33 @@ export function logout() {
   useAuthStore.setState({ user: null, accessToken: null, refreshToken: null });
   localStorage.clear();
 }
+
+// ---- Notificações -----------------------------------------------------------
+
+// Uma linha da página de notificações; `over` troca só o que o teste quer mudar.
+export const notification = (over: Record<string, unknown> = {}) => ({
+  __typename: 'Notification',
+  id: 'n1',
+  type: 'LIKE',
+  actorsCount: 1,
+  createdAt: '2026-10-26T12:00:00.000Z',
+  read: false,
+  actors: [asUser(bia)],
+  tweet: { __typename: 'Tweet', id: 't1', content: 'olá mundo' },
+  ...over,
+});
+
+export const notificationsMock = (items: unknown[]) => ({
+  request: { query: NotificationsDocument },
+  result: { data: { notifications: items } },
+});
+
+export const unreadCountMock = (count: number) => ({
+  request: { query: UnreadNotificationsCountDocument },
+  result: { data: { unreadNotificationsCount: count } },
+});
+
+export const markReadMock = () => ({
+  request: { query: MarkNotificationsReadDocument },
+  result: { data: { markNotificationsRead: true } },
+});
