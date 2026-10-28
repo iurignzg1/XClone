@@ -4,8 +4,13 @@ import type { User } from '../../users/domain/user.entity.js';
 import { FollowsService } from './follows.service.js';
 import { InMemoryFollowRepository } from '../testing/in-memory-follow.repository.js';
 
+// Só a lógica do próprio service (regras, ordem, filtros e DataLoaders).
+// Seguir e deixar de seguir de ponta a ponta estão nos e2e de feed e
+// notificações (test/).
+
 // Só os métodos do UsersService que o FollowsService usa. O @ de cada usuário é
-// o próprio id, e o findByIds devolve fora de ordem de propósito, como o banco.
+// o próprio id; a conta "suspensa" está suspensa; e o findByIds devolve fora de
+// ordem de propósito, como o banco.
 const fakeUsersService = {
   findById: (id: string) =>
     Promise.resolve(id === 'existente' ? ({ id } as User) : null),
@@ -14,7 +19,13 @@ const fakeUsersService = {
       ? Promise.reject(new NotFoundException('Usuário não encontrado'))
       : Promise.resolve({ id: username, username } as User),
   findByIds: (ids: string[]) =>
-    Promise.resolve(ids.map((id) => ({ id, username: id }) as User).reverse()),
+    Promise.resolve(
+      ids
+        .map(
+          (id) => ({ id, username: id, suspended: id === 'suspensa' }) as User,
+        )
+        .reverse(),
+    ),
 } as unknown as UsersService;
 
 describe('FollowsService', () => {
@@ -27,19 +38,6 @@ describe('FollowsService', () => {
   });
 
   describe('follow', () => {
-    it('cria o vínculo quando o usuário existe', async () => {
-      await service.follow('eu', 'existente');
-
-      expect(repository.follows.has('eu:existente')).toBe(true);
-    });
-
-    it('é idempotente: seguir duas vezes não dá erro nem duplica', async () => {
-      await service.follow('eu', 'existente');
-      await service.follow('eu', 'existente');
-
-      expect(repository.follows.size).toBe(1);
-    });
-
     it('não permite seguir a si mesmo', async () => {
       await expect(
         service.follow('existente', 'existente'),
@@ -64,20 +62,12 @@ describe('FollowsService', () => {
       await repository.add('caio', 'ana');
     });
 
-    it('seguidores vêm do mais recente para o mais antigo', async () => {
+    it('vêm do vínculo mais recente para o mais antigo', async () => {
       const followers = await service.getFollowers('ana', 10);
-
-      expect(followers.map((u) => u.id)).toEqual(['caio', 'bia']);
-    });
-
-    it('seguindo vem do mais recente para o mais antigo', async () => {
       const following = await service.getFollowing('ana', 10);
 
+      expect(followers.map((u) => u.id)).toEqual(['caio', 'bia']);
       expect(following.map((u) => u.id)).toEqual(['caio', 'bia']);
-    });
-
-    it('respeita o limite', async () => {
-      expect(await service.getFollowers('ana', 1)).toHaveLength(1);
     });
 
     it('perfil inexistente dá NotFound', async () => {
@@ -89,47 +79,33 @@ describe('FollowsService', () => {
 
   describe('getSuggestions', () => {
     beforeEach(async () => {
-      // bia tem 3 seguidores, caio 2, duda 1. ana já segue caio.
+      // A conta suspensa é a mais seguida (4); depois bia e caio (3), duda (1).
+      // ana já segue caio.
+      for (const fan of ['w', 'x', 'y', 'z'])
+        await repository.add(fan, 'suspensa');
       for (const fan of ['x', 'y', 'z']) await repository.add(fan, 'bia');
-      for (const fan of ['x', 'y']) await repository.add(fan, 'caio');
+      for (const fan of ['x', 'y', 'ana']) await repository.add(fan, 'caio');
       await repository.add('x', 'duda');
-      await repository.add('ana', 'caio');
     });
 
-    it('sugere os mais seguidos que a pessoa ainda não segue', async () => {
-      const suggestions = await service.getSuggestions('ana', 3);
+    it('sugere os mais seguidos, sem quem a pessoa já segue e sem ela mesma', async () => {
+      const forAna = await service.getSuggestions('ana', 3);
+      const forBia = await service.getSuggestions('bia', 3);
 
-      expect(suggestions.map((u) => u.id)).toEqual(['bia', 'duda']);
+      expect(forAna.map((u) => u.id)).toEqual(['bia', 'duda']);
+      expect(forBia.map((u) => u.id)).toEqual(['caio', 'duda']);
     });
 
-    it('nunca sugere a própria pessoa', async () => {
-      const suggestions = await service.getSuggestions('bia', 3);
+    it('deixa contas suspensas de fora sem faltar sugestão (busca o dobro antes de filtrar)', async () => {
+      // Com limite 1, a mais seguida é a suspensa: se o service buscasse só 1,
+      // sobraria nada depois do filtro.
+      const suggestions = await service.getSuggestions('ana', 1);
 
-      expect(suggestions.map((u) => u.id)).not.toContain('bia');
-    });
-
-    it('respeita o limite', async () => {
-      expect(await service.getSuggestions('ana', 1)).toHaveLength(1);
-    });
-  });
-
-  describe('unfollow', () => {
-    it('remove o vínculo', async () => {
-      await service.follow('eu', 'existente');
-
-      await service.unfollow('eu', 'existente');
-
-      expect(repository.follows.size).toBe(0);
-    });
-
-    it('é idempotente: deixar de seguir quem não se segue não dá erro', async () => {
-      await expect(
-        service.unfollow('eu', 'existente'),
-      ).resolves.toBeUndefined();
+      expect(suggestions.map((u) => u.id)).toEqual(['bia']);
     });
   });
 
-  describe('contadores', () => {
+  describe('DataLoaders', () => {
     beforeEach(() => {
       // ana segue bia e caio; bia segue caio.
       repository.follows.add('ana:bia');
@@ -137,58 +113,32 @@ describe('FollowsService', () => {
       repository.follows.add('bia:caio');
     });
 
-    it('conta seguidores de cada usuário', async () => {
-      const loader = service.createFollowersCountLoader();
+    it('contam seguidores e seguindo de vários usuários, cada contador numa consulta só', async () => {
+      const followers = service.createFollowersCountLoader();
+      const following = service.createFollowingCountLoader();
+      const ids = ['ana', 'bia', 'caio'];
 
-      const totals = await Promise.all(
-        ['ana', 'bia', 'caio'].map((id) => loader.load(id)),
-      );
+      const [followersTotals, followingTotals] = await Promise.all([
+        Promise.all(ids.map((id) => followers.load(id))),
+        Promise.all(ids.map((id) => following.load(id))),
+      ]);
 
-      expect(totals).toEqual([0, 1, 2]);
+      expect(followersTotals).toEqual([0, 1, 2]);
+      expect(followingTotals).toEqual([2, 1, 0]);
+      expect(repository.countCalls).toEqual([ids, ids]);
     });
 
-    it('conta quantas pessoas cada usuário segue', async () => {
-      const loader = service.createFollowingCountLoader();
-
-      const totals = await Promise.all(
-        ['ana', 'bia', 'caio'].map((id) => loader.load(id)),
-      );
-
-      expect(totals).toEqual([2, 1, 0]);
-    });
-
-    it('junta os contadores de vários usuários numa consulta só', async () => {
-      const loader = service.createFollowersCountLoader();
-
-      await Promise.all(['ana', 'bia', 'caio'].map((id) => loader.load(id)));
-
-      expect(repository.countCalls).toEqual([['ana', 'bia', 'caio']]);
-    });
-  });
-
-  describe('createFollowedByMeLoader', () => {
-    beforeEach(() => {
-      repository.follows.add('ana:bia');
-      repository.follows.add('caio:ana');
-    });
-
-    it('responde se quem está logado segue cada usuário', async () => {
-      const loader = service.createFollowedByMeLoader('ana');
+    it('respondem numa consulta só se quem está logado segue cada usuário', async () => {
+      const loader = service.createFollowedByMeLoader('bia');
 
       const result = await Promise.all(
-        ['bia', 'caio', 'ana'].map((id) => loader.load(id)),
+        ['ana', 'caio', 'bia'].map((id) => loader.load(id)),
       );
 
-      // ana segue bia; não segue caio (é caio quem segue ana); nem a si mesma.
-      expect(result).toEqual([true, false, false]);
-    });
-
-    it('junta as perguntas de vários usuários numa consulta só', async () => {
-      const loader = service.createFollowedByMeLoader('ana');
-
-      await Promise.all(['bia', 'caio'].map((id) => loader.load(id)));
-
-      expect(repository.followedCalls).toEqual([['bia', 'caio']]);
+      // O sentido importa: ana segue bia, mas bia não segue ana. bia segue
+      // caio e não segue a si mesma.
+      expect(result).toEqual([false, true, false]);
+      expect(repository.followedCalls).toEqual([['ana', 'caio', 'bia']]);
     });
   });
 });

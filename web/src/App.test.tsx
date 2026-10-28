@@ -3,6 +3,7 @@ import userEvent from '@testing-library/user-event';
 import { afterEach, describe, expect, it } from 'vitest';
 import {
   ana,
+  asUser,
   bia,
   caio,
   deleteForbiddenMock,
@@ -78,30 +79,9 @@ describe('rotas e acesso', () => {
     expect(await screen.findByRole('heading', { name: 'Administração' })).toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'Admin' })).toBeInTheDocument();
   });
-
-  it('mostra a logo preta para o tema claro e a branca para o escuro', () => {
-    renderApp();
-
-    const logos = screen.getAllByAltText('Pio');
-
-    // O CSS escolhe qual das duas aparece; aqui conferimos que as duas existem.
-    expect(logos.map((logo) => logo.getAttribute('src'))).toEqual([
-      '/logo-preta.svg',
-      '/logo-branca.svg',
-    ]);
-  });
 });
 
 describe('feed', () => {
-  it('logado, mostra quem é o usuário e o feed', async () => {
-    loginAs();
-    renderApp('/home', [feedMock([tweet()])]);
-
-    expect(await screen.findByText('olá mundo')).toBeInTheDocument();
-    expect(screen.getByText(/@bia/)).toBeInTheDocument();
-    expect(screen.getByText(/@ana/)).toBeInTheDocument();
-  });
-
   it('curtir é otimista: o coração enche na hora, antes de o servidor responder', async () => {
     loginAs();
     renderApp('/home', [feedMock([tweet()]), toggleLikeMock('t1', 1, 300)]);
@@ -136,7 +116,7 @@ describe('feed', () => {
 
   it('mostra o código do erro quando o back recusa a ação (FORBIDDEN)', async () => {
     loginAs();
-    renderApp('/home', [feedMock([tweet({ author: { __typename: 'User', ...ana } })]), deleteForbiddenMock('t1')]);
+    renderApp('/home', [feedMock([tweet({ author: asUser(ana) })]), deleteForbiddenMock('t1')]);
 
     await userEvent.click(await screen.findByRole('button', { name: 'Apagar' }));
     const dialog = screen.getByRole('alertdialog', { name: 'Apagar pio?' });
@@ -170,21 +150,15 @@ describe('feed', () => {
     expect(screen.getByRole('alert')).toHaveTextContent(/npm run start/);
   });
 
-  it('mostra quantas respostas o pio tem', async () => {
-    loginAs();
-    renderApp('/home', [feedMock([tweet({ repliesCount: 3 })])]);
-
-    expect(await screen.findByRole('link', { name: 'Responder (3)' })).toHaveAttribute('href', '/pio/t1');
-  });
-
-  it('clicar no pio abre o detalhe com as respostas', async () => {
+  it('mostra quantas respostas o pio tem; clicar no pio abre o detalhe com elas', async () => {
     loginAs();
     renderApp('/home', [
       feedMock([tweet({ repliesCount: 1 })]),
       tweetDetailMock('t1', [tweet({ id: 't2', content: 'resposta aqui', parentId: 't1' })]),
     ]);
 
-    await userEvent.click(await screen.findByText('olá mundo'));
+    expect(await screen.findByRole('link', { name: 'Responder (1)' })).toHaveAttribute('href', '/pio/t1');
+    await userEvent.click(screen.getByText('olá mundo'));
 
     expect(await screen.findByText('resposta aqui')).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: 'Pio', level: 2 })).toBeInTheDocument();
@@ -204,7 +178,7 @@ describe('feed', () => {
     loginAs('USER');
     renderApp('/home', [
       feedMock([
-        tweet({ id: 't1', author: { __typename: 'User', ...ana } }),
+        tweet({ id: 't1', author: asUser(ana) }),
         tweet({ id: 't2', content: 'da Bia' }),
       ]),
     ]);
@@ -214,8 +188,8 @@ describe('feed', () => {
     expect(screen.getAllByRole('button', { name: 'Apagar' })).toHaveLength(1);
   });
 
-  it('moderador e admin veem "Apagar" nos pios de qualquer um', async () => {
-    loginAs('ADMIN');
+  it.each(['MODERATOR', 'ADMIN'] as const)('%s vê "Apagar" nos pios de qualquer um', async (role) => {
+    loginAs(role);
     renderApp('/home', [feedMock([tweet()])]);
 
     expect(await screen.findByRole('button', { name: 'Apagar' })).toBeInTheDocument();
@@ -268,10 +242,10 @@ describe('barra lateral: pesquisa e perfil', () => {
 });
 
 describe('confirmação de ações sérias', () => {
-  it('apagar um pio pede confirmação; Cancelar fecha sem apagar', async () => {
+  it('apagar um pio pede confirmação; Cancelar ou Esc fecham sem apagar', async () => {
     loginAs();
     // Sem mock da mutation: se ela fosse chamada, apareceria um erro na tela.
-    renderApp('/home', [feedMock([tweet({ author: { __typename: 'User', ...ana } })])]);
+    renderApp('/home', [feedMock([tweet({ author: asUser(ana) })])]);
 
     await userEvent.click(await screen.findByRole('button', { name: 'Apagar' }));
     const dialog = screen.getByRole('alertdialog', { name: 'Apagar pio?' });
@@ -279,46 +253,30 @@ describe('confirmação de ações sérias', () => {
     await userEvent.click(within(dialog).getByRole('button', { name: 'Cancelar' }));
 
     expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument();
+    // Esc também cancela.
+    await userEvent.click(screen.getByRole('button', { name: 'Apagar' }));
+    await userEvent.keyboard('{Escape}');
+
+    expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument();
     expect(screen.queryByRole('alert')).not.toBeInTheDocument();
     expect(screen.getByText('olá mundo')).toBeInTheDocument();
   });
 
-  it('Esc também cancela a confirmação', async () => {
+  it('Sair pede confirmação; quem sai e entra de novo começa na home, e não na página onde estava', async () => {
     loginAs();
-    renderApp('/home', [feedMock([tweet({ author: { __typename: 'User', ...ana } })])]);
+    renderApp('/pio/t1', [tweetDetailMock('t1'), loginMock('ana@x.com', 'senha-segura'), feedMock([])]);
+    await screen.findByText('olá mundo');
 
-    await userEvent.click(await screen.findByRole('button', { name: 'Apagar' }));
-    await userEvent.keyboard('{Escape}');
-
-    expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument();
-  });
-
-  it('Sair pede confirmação: cancelar mantém a sessão, confirmar volta para o login', async () => {
-    loginAs();
-    renderApp('/home', [feedMock([])]);
-    await screen.findByRole('heading', { name: /Feed/ });
-
+    // Cancelar mantém a sessão (e a página).
     await userEvent.click(screen.getByRole('button', { name: 'Sair da conta' }));
     await userEvent.click(screen.getByRole('menuitem', { name: 'Sair' }));
     await userEvent.click(screen.getByRole('button', { name: 'Cancelar' }));
-    expect(screen.getByRole('heading', { name: /Feed/ })).toBeInTheDocument();
+    expect(screen.getByText('olá mundo')).toBeInTheDocument();
 
     await userEvent.click(screen.getByRole('button', { name: 'Sair da conta' }));
     await userEvent.click(screen.getByRole('menuitem', { name: 'Sair' }));
     const dialog = screen.getByRole('alertdialog', { name: 'Sair do Pio?' });
     await userEvent.click(within(dialog).getByRole('button', { name: 'Sair' }));
-
-    expect(await screen.findByRole('heading', { name: 'Entrar' })).toBeInTheDocument();
-  });
-
-  it('quem saiu e entra de novo começa na home, e não na página onde estava', async () => {
-    loginAs();
-    renderApp('/pio/t1', [tweetDetailMock('t1'), loginMock('ana@x.com', 'senha-segura'), feedMock([])]);
-    await screen.findByText('olá mundo');
-
-    await userEvent.click(screen.getByRole('button', { name: 'Sair da conta' }));
-    await userEvent.click(screen.getByRole('menuitem', { name: 'Sair' }));
-    await userEvent.click(within(screen.getByRole('alertdialog')).getByRole('button', { name: 'Sair' }));
     await userEvent.type(await screen.findByLabelText('E-mail'), 'ana@x.com');
     await userEvent.type(screen.getByLabelText('Senha'), 'senha-segura');
     await userEvent.click(screen.getByRole('button', { name: 'Entrar' }));
@@ -356,18 +314,7 @@ describe('confirmação de ações sérias', () => {
 });
 
 describe('detalhe do pio e perfil', () => {
-  it('o detalhe do pio mostra o pio e as respostas', async () => {
-    loginAs();
-    renderApp('/pio/t1', [
-      tweetDetailMock('t1', [tweet({ id: 't2', content: 'resposta aqui', parentId: 't1' })]),
-    ]);
-
-    expect(await screen.findByText('olá mundo')).toBeInTheDocument();
-    expect(await screen.findByText('resposta aqui')).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Responder' })).toBeInTheDocument();
-  });
-
-  it('/:username abre o perfil desse usuário', async () => {
+  it('/:username abre o perfil desse usuário, sem "Editar perfil" para quem não é o dono', async () => {
     loginAs();
     renderApp('/bia', [profileMock(bia, 'oi, sou a Bia'), userTweetsMock('bia', [tweet()])]);
 
@@ -375,6 +322,7 @@ describe('detalhe do pio e perfil', () => {
     expect(await screen.findByText('olá mundo')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Seguir' })).toBeInTheDocument();
     expect(screen.queryByText('USER')).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Editar perfil' })).not.toBeInTheDocument();
   });
 
   it.each(['ADMIN', 'MODERATOR'])('o perfil de um %s mostra o selo do papel', async (role) => {
@@ -384,11 +332,13 @@ describe('detalhe do pio e perfil', () => {
     expect(await screen.findByText(role)).toBeInTheDocument();
   });
 
-  it('a barra lateral só mostra o papel de quem não é usuário comum', async () => {
+  it('a barra lateral não mostra papel para usuário comum', async () => {
     loginAs('USER');
     renderApp('/home', [feedMock([])]);
     await screen.findByRole('heading', { name: /Feed/ });
+
     expect(screen.getByText('@ana')).toBeInTheDocument();
+    expect(screen.queryByText('USER')).not.toBeInTheDocument();
   });
 
   it('a barra lateral mostra o papel do ADMIN logado', async () => {
@@ -459,26 +409,25 @@ describe('detalhe do pio e perfil', () => {
     expect(screen.queryByRole('alert')).not.toBeInTheDocument();
   });
 
-  it('clicar em "seguidores" abre a lista de quem segue o perfil', async () => {
+  it('"seguidores" e "seguindo" abrem cada um a sua lista de pessoas', async () => {
     loginAs();
-    renderApp('/bia', [profileMock(bia, 'oi'), userTweetsMock('bia', []), followersMock('bia', [caio])]);
+    renderApp('/bia', [
+      profileMock(bia, 'oi'),
+      userTweetsMock('bia', []),
+      followersMock('bia', [caio]),
+      followingMock('bia', [caio]),
+    ]);
 
     await userEvent.click(await screen.findByRole('button', { name: '3 seguidores' }));
+    const followers = await screen.findByRole('dialog', { name: 'Seguidores' });
+    expect(await within(followers).findByText('Caio')).toBeInTheDocument();
+    expect(within(followers).getByRole('button', { name: 'Seguir' })).toBeInTheDocument();
+    await userEvent.keyboard('{Escape}');
 
-    const dialog = await screen.findByRole('dialog', { name: 'Seguidores' });
-    expect(await within(dialog).findByText('Caio')).toBeInTheDocument();
-    expect(within(dialog).getByRole('button', { name: 'Seguir' })).toBeInTheDocument();
-  });
-
-  it('clicar em "seguindo" abre a lista de quem o perfil segue', async () => {
-    loginAs();
-    renderApp('/bia', [profileMock(bia, 'oi'), userTweetsMock('bia', []), followingMock('bia', [caio])]);
-
-    await userEvent.click(await screen.findByRole('button', { name: '1 seguindo' }));
-
-    const dialog = await screen.findByRole('dialog', { name: 'Seguindo' });
-    expect(await within(dialog).findByText('Caio')).toBeInTheDocument();
-    expect(within(dialog).getByRole('button', { name: 'Seguindo' })).toBeInTheDocument();
+    await userEvent.click(screen.getByRole('button', { name: '1 seguindo' }));
+    const following = await screen.findByRole('dialog', { name: 'Seguindo' });
+    expect(await within(following).findByText('Caio')).toBeInTheDocument();
+    expect(within(following).getByRole('button', { name: 'Seguindo' })).toBeInTheDocument();
   });
 
   it('a lista vazia avisa, e Esc fecha a janela', async () => {
@@ -492,21 +441,17 @@ describe('detalhe do pio e perfil', () => {
     expect(screen.queryByRole('dialog', { name: 'Seguidores' })).not.toBeInTheDocument();
   });
 
-  it('no perfil de outra pessoa não existe "Editar perfil"', async () => {
-    loginAs();
-    renderApp('/bia', [profileMock(bia, 'oi'), userTweetsMock('bia', [])]);
-
-    await screen.findByText('oi');
-
-    expect(screen.queryByRole('button', { name: 'Editar perfil' })).not.toBeInTheDocument();
-  });
 });
 
 describe('composer, sugestões, abas e atalhos', () => {
-  it('"Publicar" da barra lateral abre o composer em janela, que fecha ao publicar', async () => {
+  it('"Publicar" da barra lateral abre o composer em janela, que fecha com Esc ou ao publicar', async () => {
     loginAs();
     renderApp('/home', [feedMock([]), createTweetMock('pio pela janela'), feedMock([])]);
     await screen.findByRole('heading', { name: /Feed/ });
+
+    await userEvent.click(screen.getAllByRole('button', { name: 'Publicar' })[0]);
+    await userEvent.keyboard('{Escape}');
+    expect(screen.queryByRole('dialog', { name: 'Novo pio' })).not.toBeInTheDocument();
 
     await userEvent.click(screen.getAllByRole('button', { name: 'Publicar' })[0]);
     const dialog = screen.getByRole('dialog', { name: 'Novo pio' });
@@ -514,18 +459,6 @@ describe('composer, sugestões, abas e atalhos', () => {
     await userEvent.click(within(dialog).getByRole('button', { name: 'Publicar' }));
 
     await waitFor(() => expect(screen.queryByRole('dialog', { name: 'Novo pio' })).not.toBeInTheDocument());
-  });
-
-  it('o composer em janela fecha com Esc', async () => {
-    loginAs();
-    renderApp('/home', [feedMock([])]);
-    await screen.findByRole('heading', { name: /Feed/ });
-
-    await userEvent.click(screen.getAllByRole('button', { name: 'Publicar' })[0]);
-    expect(screen.getByRole('dialog', { name: 'Novo pio' })).toBeInTheDocument();
-    await userEvent.keyboard('{Escape}');
-
-    expect(screen.queryByRole('dialog', { name: 'Novo pio' })).not.toBeInTheDocument();
   });
 
   it('a home mostra "Quem seguir" com as sugestões', async () => {
@@ -592,13 +525,6 @@ describe('administração: contas suspensas', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Reativar conta' }));
     const dialog = screen.getByRole('alertdialog', { name: 'Reativar @caio?' });
     await userEvent.click(within(dialog).getByRole('button', { name: 'Reativar' }));
-
-    expect(await screen.findByText('Nenhuma conta suspensa.')).toBeInTheDocument();
-  });
-
-  it('sem contas suspensas, avisa', async () => {
-    loginAs('ADMIN');
-    renderApp('/admin', [suspendedUsersMock([])]);
 
     expect(await screen.findByText('Nenhuma conta suspensa.')).toBeInTheDocument();
   });

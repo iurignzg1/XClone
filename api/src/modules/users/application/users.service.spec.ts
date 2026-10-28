@@ -2,6 +2,9 @@ import { BadRequestException, NotFoundException } from '@nestjs/common';
 import { UsersService } from './users.service.js';
 import { InMemoryUserRepository } from '../testing/in-memory-user.repository.js';
 
+// Só a lógica do próprio service. Busca, capa padrão e suspensão, que dependem
+// das consultas no Mongo, são testadas de verdade nos e2e (test/).
+
 describe('UsersService', () => {
   let repository: InMemoryUserRepository;
   let service: UsersService;
@@ -17,199 +20,59 @@ describe('UsersService', () => {
     });
   });
 
-  describe('getByUsername', () => {
-    it('devolve o usuário quando ele existe', async () => {
-      const user = await service.getByUsername('iuri');
-
-      expect(user.email).toBe('iuri@example.com');
+  function create(username: string) {
+    return service.create({
+      username,
+      email: `${username}@example.com`,
+      passwordHash: 'hash',
+      displayName: username,
     });
+  }
 
-    it('lança NotFound quando o usuário não existe', async () => {
-      await expect(service.getByUsername('fantasma')).rejects.toBeInstanceOf(
-        NotFoundException,
-      );
-    });
+  it('getByUsername devolve o usuário pelo @, ou NotFound se ele não existe', async () => {
+    const user = await service.getByUsername('iuri');
+
+    expect(user.email).toBe('iuri@example.com');
+    await expect(service.getByUsername('fantasma')).rejects.toBeInstanceOf(
+      NotFoundException,
+    );
   });
 
-  describe('search', () => {
-    async function seed() {
-      for (const [username, displayName] of [
-        ['ana', 'Ana Souza'],
-        ['anabela', 'Bela'],
-        ['bruno', 'Bruno Anacleto'],
-        ['caio', 'Caio'],
-      ]) {
-        await service.create({
-          username,
-          email: `${username}@example.com`,
-          passwordHash: 'hash',
-          displayName,
-        });
-      }
-    }
-
-    it('acha pelo começo do @ e por parte do nome, sem diferenciar maiúsculas', async () => {
-      await seed();
-
-      const found = await service.search('ANA', 10);
-
-      expect(found.map((u) => u.username)).toEqual(['ana', 'anabela', 'bruno']);
-    });
-
-    it('respeita o limite', async () => {
-      await seed();
-
-      expect(await service.search('ana', 2)).toHaveLength(2);
-    });
-
-    it('deixa contas suspensas de fora', async () => {
-      await seed();
-      const caio = repository.users.find((u) => u.username === 'caio');
-      if (caio) caio.suspended = true;
-
-      expect(await service.search('caio', 10)).toEqual([]);
-    });
-
-    it('termo só de espaços não busca nada', async () => {
-      await seed();
-
-      expect(await service.search('   ', 10)).toEqual([]);
-    });
+  it('a busca com termo só de espaços não busca nada (em vez de achar todo mundo)', async () => {
+    expect(await service.search('   ', 10)).toEqual([]);
   });
 
-  describe('updateProfile', () => {
-    it('troca o nome e a bio e devolve o usuário atualizado', async () => {
-      const user = await service.create({
-        username: 'ana',
-        email: 'ana@example.com',
-        passwordHash: 'hash',
-        displayName: 'Ana',
-      });
-
-      const result = await service.updateProfile(user.id, {
-        displayName: 'Ana Silva',
-        bio: 'Gosto de pios curtos.',
-        cover: 'sol',
-      });
-
-      expect(result.displayName).toBe('Ana Silva');
-      expect(result.bio).toBe('Gosto de pios curtos.');
-      expect(result.cover).toBe('sol');
-      const saved = repository.users.find((u) => u.id === user.id);
-      expect(saved?.displayName).toBe('Ana Silva');
-      expect(saved?.bio).toBe('Gosto de pios curtos.');
-      expect(saved?.username).toBe('ana');
-      expect(saved?.email).toBe('ana@example.com');
-    });
-
-    it('uma bio vazia apaga a bio', async () => {
-      const user = await service.create({
-        username: 'ana',
-        email: 'ana@example.com',
-        passwordHash: 'hash',
-        displayName: 'Ana',
-      });
-      await service.updateProfile(user.id, {
-        displayName: 'Ana',
-        bio: 'oi',
-        cover: 'grafite',
-      });
-
-      const result = await service.updateProfile(user.id, {
-        displayName: 'Ana',
+  it('updateProfile recusa quando o usuário não existe', async () => {
+    await expect(
+      service.updateProfile('nao-existe', {
+        displayName: 'Fulano',
         bio: '',
         cover: 'grafite',
-      });
-
-      expect(result.bio).toBe('');
-    });
-
-    it('conta nova começa com a capa padrão', async () => {
-      const user = await service.create({
-        username: 'novo',
-        email: 'novo@example.com',
-        passwordHash: 'hash',
-        displayName: 'Novo',
-      });
-
-      expect(user.cover).toBe('grafite');
-    });
-
-    it('recusa quando o usuário não existe', async () => {
-      await expect(
-        service.updateProfile('nao-existe', {
-          displayName: 'Fulano',
-          bio: '',
-          cover: 'grafite',
-        }),
-      ).rejects.toBeInstanceOf(NotFoundException);
-    });
+      }),
+    ).rejects.toBeInstanceOf(NotFoundException);
   });
 
-  describe('unsuspend e listSuspended', () => {
-    async function create(username: string) {
-      return service.create({
-        username,
-        email: `${username}@example.com`,
-        passwordHash: 'hash',
-        displayName: username,
-      });
-    }
-
-    it('lista só as contas suspensas, em ordem de @', async () => {
-      const zeca = await create('zeca');
-      const bia = await create('bia');
-      await create('caio');
-      await service.suspend('admin', zeca.id);
-      await service.suspend('admin', bia.id);
-
-      const suspended = await service.listSuspended(10);
-
-      expect(suspended.map((u) => u.username)).toEqual(['bia', 'zeca']);
-    });
-
-    it('reativar tira a suspensão e a conta sai da lista', async () => {
-      const bia = await create('bia');
-      await service.suspend('admin', bia.id);
-
-      const result = await service.unsuspend(bia.id);
-
-      expect(result.suspended).toBe(false);
-      expect(await service.listSuspended(10)).toEqual([]);
-    });
-
-    it('reativar quem não existe dá NotFound', async () => {
-      await expect(service.unsuspend('nao-existe')).rejects.toBeInstanceOf(
-        NotFoundException,
-      );
-    });
-  });
-
-  describe('suspend', () => {
-    it('marca a conta como suspensa e devolve o usuário atualizado', async () => {
-      const alvo = await service.create({
-        username: 'alvo',
-        email: 'alvo@example.com',
-        passwordHash: 'hash',
-        displayName: 'Alvo',
-      });
-
-      const result = await service.suspend('admin', alvo.id);
-
-      expect(result.suspended).toBe(true);
-      expect(repository.users.find((u) => u.id === alvo.id)?.suspended).toBe(
-        true,
-      );
-    });
-
+  describe('suspender e reativar', () => {
     it('não permite que o admin suspenda a própria conta', async () => {
       await expect(service.suspend('admin', 'admin')).rejects.toBeInstanceOf(
         BadRequestException,
       );
     });
 
-    it('lança NotFound quando o usuário não existe', async () => {
+    it('reativar tira a suspensão', async () => {
+      const bia = await create('bia');
+      await service.suspend('admin', bia.id);
+
+      const result = await service.unsuspend(bia.id);
+
+      expect(result.suspended).toBe(false);
+    });
+
+    it('suspender ou reativar quem não existe dá NotFound', async () => {
       await expect(service.suspend('admin', 'fantasma')).rejects.toBeInstanceOf(
+        NotFoundException,
+      );
+      await expect(service.unsuspend('fantasma')).rejects.toBeInstanceOf(
         NotFoundException,
       );
     });
@@ -217,12 +80,7 @@ describe('UsersService', () => {
 
   describe('createByIdLoader', () => {
     beforeEach(async () => {
-      await service.create({
-        username: 'maria',
-        email: 'maria@example.com',
-        passwordHash: 'hash',
-        displayName: 'Maria',
-      });
+      await create('maria');
     });
 
     it('junta várias buscas numa consulta só e devolve na ordem pedida', async () => {

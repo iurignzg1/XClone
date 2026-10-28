@@ -6,6 +6,10 @@ import type { User } from '../../users/domain/user.entity.js';
 import { LikesService } from './likes.service.js';
 import { InMemoryLikeRepository } from '../testing/in-memory-like.repository.js';
 
+// Aqui ficam as corridas (que só dá para encenar controlando o repositório) e
+// a lógica do próprio service. Curtir, descurtir, contar e apagar junto com o
+// pio, de ponta a ponta, estão em test/likes.e2e-spec.ts.
+
 // Só os métodos do TweetsService que o LikesService usa.
 function fakeTweetsService(tweet: Tweet) {
   return {
@@ -59,98 +63,52 @@ describe('LikesService', () => {
     );
   });
 
-  it('curte um tweet ainda não curtido e soma 1 ao contador', async () => {
-    const result = await service.toggle('u1', 't1');
+  describe('toggle em corrida', () => {
+    it('não soma ao contador quando outra requisição já criou a curtida', async () => {
+      // Simula a corrida: a curtida aparece entre o "remove" e o "add".
+      likes.remove = () => Promise.resolve(false);
+      likes.add = () => Promise.resolve(false);
+      tweet.likesCount = 1;
 
-    expect(result).toEqual({ liked: true, likesCount: 1 });
+      const result = await service.toggle('u1', 't1');
+
+      expect(result).toEqual({ liked: true, likesCount: 1 });
+    });
+
+    it('duplo clique simultâneo do mesmo usuário não desajusta o contador', async () => {
+      // Reproduz a ordem que quebrava a versão anterior: a 1ª requisição grava a
+      // curtida e, antes de somar 1, a 2ª remove essa curtida e desconta 1.
+      let release!: () => void;
+      const gate = new Promise<void>((resolve) => (release = resolve));
+      const realAdd = likes.add.bind(likes);
+      likes.add = async (userId: string, tweetId: string) => {
+        const created = await realAdd(userId, tweetId);
+        await gate;
+        return created;
+      };
+
+      const first = service.toggle('u1', 't1');
+      await new Promise((resolve) => setTimeout(resolve, 0));
+      await service.toggle('u1', 't1');
+      release();
+      await first;
+
+      expect(likes.likes.size).toBe(0);
+      expect(tweet.likesCount).toBe(0);
+    });
   });
 
-  it('a segunda chamada do mesmo usuário remove a curtida e volta o contador', async () => {
-    await service.toggle('u1', 't1');
+  it('createLikedByMeLoader junta as perguntas numa consulta só e responde na ordem pedida', async () => {
+    likes.likes.add('u1:t1');
+    likes.likes.add('u1:t3');
+    const loader = service.createLikedByMeLoader('u1');
 
-    const result = await service.toggle('u1', 't1');
-
-    expect(result).toEqual({ liked: false, likesCount: 0 });
-    expect(likes.likes.size).toBe(0);
-  });
-
-  it('usuários diferentes curtem o mesmo tweet de forma independente', async () => {
-    await service.toggle('u1', 't1');
-    const result = await service.toggle('u2', 't1');
-
-    expect(result).toEqual({ liked: true, likesCount: 2 });
-  });
-
-  it('não soma ao contador quando outra requisição já criou a curtida', async () => {
-    // Simula a corrida: a curtida aparece entre o "remove" e o "add".
-    likes.remove = () => Promise.resolve(false);
-    likes.add = () => Promise.resolve(false);
-    tweet.likesCount = 1;
-
-    const result = await service.toggle('u1', 't1');
-
-    expect(result).toEqual({ liked: true, likesCount: 1 });
-  });
-
-  it('duplo clique simultâneo do mesmo usuário não desajusta o contador', async () => {
-    // Reproduz a ordem que quebrava a versão anterior: a 1ª requisição grava a
-    // curtida e, antes de somar 1, a 2ª remove essa curtida e desconta 1.
-    let release!: () => void;
-    const gate = new Promise<void>((resolve) => (release = resolve));
-    const realAdd = likes.add.bind(likes);
-    likes.add = async (userId: string, tweetId: string) => {
-      const created = await realAdd(userId, tweetId);
-      await gate;
-      return created;
-    };
-
-    const first = service.toggle('u1', 't1');
-    await new Promise((resolve) => setTimeout(resolve, 0));
-    await service.toggle('u1', 't1');
-    release();
-    await first;
-
-    expect(likes.likes.size).toBe(0);
-    expect(tweet.likesCount).toBe(0);
-  });
-
-  it('recusa curtir um tweet que não existe', async () => {
-    await expect(service.toggle('u1', 'nao-existe')).rejects.toBeInstanceOf(
-      NotFoundException,
+    const result = await Promise.all(
+      ['t1', 't2', 't3', 't4'].map((id) => loader.load(id)),
     );
-    expect(likes.likes.size).toBe(0);
-  });
 
-  describe('createLikedByMeLoader', () => {
-    it('responde true só para os tweets que o usuário curtiu', async () => {
-      likes.likes.add('u1:t1');
-      likes.likes.add('u1:t3');
-      const loader = service.createLikedByMeLoader('u1');
-
-      const result = await Promise.all([
-        loader.load('t1'),
-        loader.load('t2'),
-        loader.load('t3'),
-      ]);
-
-      expect(result).toEqual([true, false, true]);
-    });
-
-    it('junta várias consultas numa só (evita o N+1)', async () => {
-      const loader = service.createLikedByMeLoader('u1');
-
-      await Promise.all(['t1', 't2', 't3', 't4'].map((id) => loader.load(id)));
-
-      expect(likes.lookups).toHaveLength(1);
-      expect(likes.lookups[0]).toEqual(['t1', 't2', 't3', 't4']);
-    });
-
-    it('não confunde curtidas de usuários diferentes', async () => {
-      likes.likes.add('u2:t1');
-      const loader = service.createLikedByMeLoader('u1');
-
-      await expect(loader.load('t1')).resolves.toBe(false);
-    });
+    expect(result).toEqual([true, false, true, false]);
+    expect(likes.lookups).toEqual([['t1', 't2', 't3', 't4']]);
   });
 
   describe('getLikers', () => {
@@ -164,22 +122,6 @@ describe('LikesService', () => {
       expect(likers.map((user) => user.id)).toEqual(['u3', 'u2', 'u1']);
     });
 
-    it('respeita o limite', async () => {
-      await service.toggle('u1', 't1');
-      await service.toggle('u2', 't1');
-
-      const likers = await service.getLikers('t1', 1);
-
-      expect(likers.map((user) => user.id)).toEqual(['u2']);
-    });
-
-    it('não lista quem descurtiu', async () => {
-      await service.toggle('u1', 't1');
-      await service.toggle('u1', 't1');
-
-      await expect(service.getLikers('t1', 50)).resolves.toEqual([]);
-    });
-
     it('recusa um tweet que não existe', async () => {
       await expect(service.getLikers('nao-existe', 50)).rejects.toBeInstanceOf(
         NotFoundException,
@@ -187,30 +129,12 @@ describe('LikesService', () => {
     });
   });
 
-  describe('getLikedTweets', () => {
-    it('lista o que a pessoa curtiu, sem os pios que não existem mais', async () => {
-      await service.toggle('ana', 't1');
-      await likes.add('ana', 'apagado');
+  it('getLikedTweets lista o que a pessoa curtiu, sem os pios que não existem mais', async () => {
+    await service.toggle('ana', 't1');
+    await likes.add('ana', 'apagado');
 
-      const liked = await service.getLikedTweets('ana', 10);
+    const liked = await service.getLikedTweets('ana', 10);
 
-      expect(liked.map((t) => t.id)).toEqual(['t1']);
-    });
-
-    it('quem não curtiu nada tem a lista vazia', async () => {
-      expect(await service.getLikedTweets('bia', 10)).toEqual([]);
-    });
-  });
-
-  describe('handleTweetDeleted', () => {
-    it('apaga as curtidas do tweet apagado e só dele', async () => {
-      likes.likes.add('u1:t1');
-      likes.likes.add('u2:t1');
-      likes.likes.add('u1:t2');
-
-      await service.handleTweetDeleted({ tweetId: 't1' });
-
-      expect([...likes.likes]).toEqual(['u1:t2']);
-    });
+    expect(liked.map((t) => t.id)).toEqual(['t1']);
   });
 });

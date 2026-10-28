@@ -1,4 +1,5 @@
 import type { MongoMemoryServer } from 'mongodb-memory-server';
+import { makeAdmin, suspend } from './support/actions.js';
 import {
   codeOf,
   createTestApp,
@@ -37,13 +38,21 @@ describe('Autenticação (e2e)', () => {
   afterEach(() => t.close());
   afterAll(() => mongo.stop());
 
-  it('o cadastro já entra: o access token abre o `me`', async () => {
+  it('o cadastro já entra: o access token abre o `me`, com a capa padrão', async () => {
     const session = await signup(t, 'ana');
 
-    const { body } = await t.gql(ME, {}, session.accessToken);
+    const { body } = await t.gql(
+      `query { me { id username cover } }`,
+      {},
+      session.accessToken,
+    );
 
     expect(body.data).toEqual({
-      me: { id: session.user.id, username: session.user.username },
+      me: {
+        id: session.user.id,
+        username: session.user.username,
+        cover: 'grafite',
+      },
     });
   });
 
@@ -160,24 +169,14 @@ describe('Autenticação (e2e)', () => {
   it('conta suspensa por um ADMIN não consegue mais entrar (FORBIDDEN)', async () => {
     const admin = await signup(t, 'admin');
     const bia = await signup(t, 'bia');
-    // Não há mutation para virar ADMIN (de propósito); preparamos no banco.
-    await t.db
-      .collection('users')
-      .updateOne(
-        { username: admin.user.username },
-        { $set: { role: 'ADMIN' } },
-      );
+    await makeAdmin(t, admin);
 
-    const suspend = await t.gql(
-      `mutation ($input: SuspendUserInput!) { suspendUser(input: $input) { suspended } }`,
-      { input: { userId: bia.user.id } },
-      admin.accessToken,
-    );
+    const suspended = await suspend(t, admin, bia);
     const login = await t.gql(LOGIN, {
       input: { email: bia.user.email, password: PASSWORD },
     });
 
-    expect(suspend.body.data).toEqual({ suspendUser: { suspended: true } });
+    expect(suspended.body.data).toEqual({ suspendUser: { suspended: true } });
     expect(login.body.errors?.[0]).toMatchObject({
       message: 'Conta suspensa',
       extensions: { code: 'FORBIDDEN' },
@@ -188,56 +187,36 @@ describe('Autenticação (e2e)', () => {
     const ana = await signup(t, 'ana');
     const bia = await signup(t, 'bia');
 
-    const { body } = await t.gql(
-      `mutation ($input: SuspendUserInput!) { suspendUser(input: $input) { suspended } }`,
-      { input: { userId: bia.user.id } },
-      ana.accessToken,
-    );
+    const { body } = await suspend(t, ana, bia);
 
     expect(codeOf(body)).toBe('FORBIDDEN');
   });
 
-  describe('rate limit', () => {
-    it('a 6ª tentativa de login no mesmo minuto dá TOO_MANY_REQUESTS', async () => {
-      const attempt = () =>
-        t.gql(LOGIN, {
-          input: { email: 'alvo@teste.com', password: 'chute-errado' },
-        });
-
-      // As 5 primeiras passam pelo limite (e falham pela senha).
-      for (let i = 0; i < 5; i += 1) {
-        expect(codeOf((await attempt()).body)).toBe('UNAUTHENTICATED');
-      }
-      const sixth = await attempt();
-
-      expect(sixth.body.errors?.[0]).toMatchObject({
-        message: 'Muitas tentativas. Espere um minuto e tente de novo.',
-        extensions: { code: 'TOO_MANY_REQUESTS' },
-      });
-    });
-
-    it('o limite do login não atrapalha as outras operações', async () => {
-      const ana = await signup(t, 'ana');
-      for (let i = 0; i < 6; i += 1) {
-        await t.gql(LOGIN, {
-          input: { email: 'alvo@teste.com', password: 'chute-errado' },
-        });
-      }
-
-      const { body } = await t.gql(ME, {}, ana.accessToken);
-
-      expect(body.data).toEqual({
-        me: { id: ana.user.id, username: ana.user.username },
-      });
-    });
-
-    it('avisa nos cabeçalhos quanto falta para o limite', async () => {
-      const { headers } = await t.gql(LOGIN, {
+  it('rate limit: a 6ª tentativa de login no mesmo minuto dá TOO_MANY_REQUESTS, sem travar as outras operações', async () => {
+    const ana = await signup(t, 'ana');
+    const attempt = () =>
+      t.gql(LOGIN, {
         input: { email: 'alvo@teste.com', password: 'chute-errado' },
       });
 
-      expect(headers['x-ratelimit-limit']).toBe('5');
-      expect(headers['x-ratelimit-remaining']).toBe('4');
+    // A 1ª já avisa nos cabeçalhos quanto falta para o limite.
+    const first = await attempt();
+    expect(first.headers['x-ratelimit-limit']).toBe('5');
+    expect(first.headers['x-ratelimit-remaining']).toBe('4');
+    // Até a 5ª, passam pelo limite (e falham pela senha).
+    for (let i = 2; i <= 5; i += 1) {
+      expect(codeOf((await attempt()).body)).toBe('UNAUTHENTICATED');
+    }
+    const sixth = await attempt();
+    // O limite é por operação: o resto da API continua respondendo.
+    const me = await t.gql(ME, {}, ana.accessToken);
+
+    expect(sixth.body.errors?.[0]).toMatchObject({
+      message: 'Muitas tentativas. Espere um minuto e tente de novo.',
+      extensions: { code: 'TOO_MANY_REQUESTS' },
+    });
+    expect(me.body.data).toEqual({
+      me: { id: ana.user.id, username: ana.user.username },
     });
   });
 });

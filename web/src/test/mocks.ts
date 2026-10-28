@@ -32,7 +32,7 @@ export const ana = { id: 'u1', username: 'ana', displayName: 'Ana' };
 export const bia = { id: 'u2', username: 'bia', displayName: 'Bia' };
 export const caio = { id: 'u3', username: 'caio', displayName: 'Caio' };
 
-const asUser = (person: typeof ana) => ({ __typename: 'User', ...person });
+export const asUser = (person: typeof ana) => ({ __typename: 'User', ...person });
 
 // ---- Dados ---------------------------------------------------------------
 

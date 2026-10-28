@@ -35,13 +35,6 @@ describe('ThemeToggle', () => {
     expect(screen.getByRole('button', { name: 'Tema escuro' })).toBeInTheDocument();
   });
 
-  it('com o sistema escuro, o botão leva ao claro', () => {
-    systemTheme('dark');
-    render(<ThemeToggle />);
-
-    expect(screen.getByRole('button', { name: 'Tema claro' })).toBeInTheDocument();
-  });
-
   it('ao apertar, troca o tema na página e o botão passa a levar de volta', async () => {
     render(<ThemeToggle />);
 

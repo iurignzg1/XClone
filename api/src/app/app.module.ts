@@ -7,8 +7,6 @@ import { GraphQLModule } from '@nestjs/graphql';
 import { MongooseModule } from '@nestjs/mongoose';
 import { ThrottlerModule } from '@nestjs/throttler';
 import { join } from 'node:path';
-import { AppController } from './app.controller.js';
-import { AppService } from './app.service.js';
 import { CommonModule } from '../common/common.module.js';
 import {
   DEFAULT_RATE_LIMIT,
@@ -91,9 +89,7 @@ const MAX_QUERY_COMPLEXITY = 2000;
     FollowsModule,
     FeedModule,
   ],
-  controllers: [AppController],
   providers: [
-    AppService,
     // Antes dos guards de autenticação (AuthModule): quem passou do limite é
     // barrado sem gastar nem a conferência do token.
     { provide: APP_GUARD, useClass: GqlThrottlerGuard },

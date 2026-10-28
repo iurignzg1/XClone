@@ -9,7 +9,7 @@ import { apolloClient } from './client';
 // - devolve o par novo no RefreshSession;
 // - guarda a ordem das operações recebidas.
 let calls: string[];
-let refreshBehavior: 'ok' | 'recusado' | 'rede';
+let refreshBehavior: 'ok' | 'recusado' | 'limite' | 'rede';
 
 const gqlError = (message: string, code: string) => ({
   errors: [{ message, extensions: { code } }],
@@ -45,7 +45,9 @@ function fakeApi(_url: unknown, init?: RequestInit): Promise<Response> {
     payload =
       refreshBehavior === 'ok'
         ? session('token-novo', 'refresh-novo')
-        : gqlError('Sessão inválida', 'UNAUTHENTICATED');
+        : refreshBehavior === 'limite'
+          ? gqlError('Muitas tentativas', 'TOO_MANY_REQUESTS')
+          : gqlError('Sessão inválida', 'UNAUTHENTICATED');
   } else if (body.operationName === 'Login') {
     payload = gqlError('Credenciais inválidas', 'UNAUTHENTICATED');
   } else {
@@ -129,6 +131,15 @@ describe('cliente Apollo: token e renovação', () => {
     expect(calls).toEqual(['Feed', 'RefreshSession']);
     expect(useAuthStore.getState().refreshToken).toBeNull();
     expect(useAuthStore.getState().user).toBeNull();
+  });
+
+  it('renovação barrada pelo rate limit não encerra a sessão (o token ainda vale)', async () => {
+    refreshBehavior = 'limite';
+
+    await expect(feed(1)).rejects.toBeDefined();
+
+    expect(calls).toEqual(['Feed', 'RefreshSession']);
+    expect(useAuthStore.getState().refreshToken).toBe('refresh-velho');
   });
 
   it('erro de rede na renovação não encerra a sessão', async () => {

@@ -21,10 +21,12 @@ const SIGNUP = `
 let counter = 0;
 
 // Cria uma conta nova pela API (o mesmo caminho do front) e devolve a sessão.
-// O contador garante usernames e e-mails diferentes dentro do mesmo arquivo.
+// O contador garante usernames e e-mails diferentes dentro do mesmo arquivo:
+// signup(t, 'ana') cria @ana1, @ana2...
 export async function signup(
   t: TestApp,
   name = 'pessoa',
+  displayName = name,
 ): Promise<TestSession> {
   counter += 1;
   const username = `${name}${counter}`;
@@ -33,7 +35,7 @@ export async function signup(
       username,
       email: `${username}@teste.com`,
       password: PASSWORD,
-      displayName: name,
+      displayName,
     },
   });
   if (!body.data) {

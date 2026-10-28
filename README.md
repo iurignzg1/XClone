@@ -78,10 +78,14 @@ Abra <http://localhost:5173>. O front procura a API em `http://localhost:3000/gr
 
 Os testes e2e não precisam de banco nenhum, nem do `.env`. Eles sobem um MongoDB temporário na memória (`mongodb-memory-server`), que é apagado no fim. Na primeira vez, o pacote baixa o binário do MongoDB, uns 100 MB.
 
+Os testes unitários ficam com as regras que dependem só do código: prazos e corridas da sessão, curtidas simultâneas, DataLoaders, guards, validação. Tudo o que depende das consultas no Mongo (ordem, filtros, cursor, índices) é testado nos e2e, com o banco de verdade. Um caso não é repetido nos dois.
+
 O que os e2e cobrem:
 
 - **Autenticação:** cadastro, login, senha errada, renovação de sessão (inclusive o reuso de um refresh token roubado), logout, conta suspensa e o rate limit do login.
-- **Curtidas:** curtir e descurtir, contagem por pessoa, cliques simultâneos, pio inexistente, sem login e o que acontece ao apagar o pio.
+- **Curtidas:** curtir e descurtir, contagem por pessoa, cliques simultâneos, pio inexistente e o que acontece ao apagar o pio.
+- **Feed e respostas:** seguir alguém muda o feed, as respostas ficam fora dele, a paginação pelo cursor e as respostas no pio e na aba do perfil.
+- **Busca:** pelo começo do @ ou parte do nome, sem contas suspensas, com o termo tratado como texto (e não como expressão regular).
 - **Proteções:** cabeçalhos do helmet, limite de complexidade, e a API em modo produção sem introspecção nem GraphiQL.
 
 ## Arquitetura

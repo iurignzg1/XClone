@@ -11,8 +11,9 @@ function errorsFor(input: Record<string, unknown>): string[] {
 describe('UpdateProfileInput', () => {
   const valid = { displayName: 'Ana', bio: 'oi', cover: 'sol' };
 
-  it('aceita um perfil válido', () => {
+  it('aceita um perfil válido, inclusive com a bio vazia (é assim que se apaga)', () => {
     expect(errorsFor(valid)).toEqual([]);
+    expect(errorsFor({ ...valid, bio: '' })).toEqual([]);
   });
 
   it('recusa uma capa que não está na lista', () => {

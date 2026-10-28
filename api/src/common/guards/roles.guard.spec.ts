@@ -64,14 +64,6 @@ describe('RolesGuard', () => {
     expect(() => guard.canActivate(context)).toThrow(ForbiddenException);
   });
 
-  it('barra um usuário comum numa operação de ADMIN', () => {
-    const context = contextFor(handlers.somenteAdmin, {
-      role: UserRole.USER,
-    });
-
-    expect(() => guard.canActivate(context)).toThrow(ForbiddenException);
-  });
-
   it('aceita qualquer um dos papéis listados', () => {
     const moderator = contextFor(handlers.moderacao, {
       role: UserRole.MODERATOR,

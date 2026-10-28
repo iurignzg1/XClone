@@ -46,16 +46,12 @@ describe('TweetOwnerGuard', () => {
     );
   });
 
-  it('libera um moderador, mesmo não sendo o autor', async () => {
-    const context = contextFor({ id: 'mod', role: UserRole.MODERATOR }, 't1');
+  it('libera moderador e administrador, mesmo não sendo os autores', async () => {
+    const moderator = contextFor({ id: 'mod', role: UserRole.MODERATOR }, 't1');
+    const admin = contextFor({ id: 'adm', role: UserRole.ADMIN }, 't1');
 
-    await expect(guard.canActivate(context)).resolves.toBe(true);
-  });
-
-  it('libera um administrador, mesmo não sendo o autor', async () => {
-    const context = contextFor({ id: 'adm', role: UserRole.ADMIN }, 't1');
-
-    await expect(guard.canActivate(context)).resolves.toBe(true);
+    await expect(guard.canActivate(moderator)).resolves.toBe(true);
+    await expect(guard.canActivate(admin)).resolves.toBe(true);
   });
 
   it('devolve NotFound quando o tweet não existe', async () => {

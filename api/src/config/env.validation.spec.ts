@@ -46,16 +46,13 @@ describe('validate (.env)', () => {
     ).not.toThrow();
   });
 
-  it('recusa MONGODB_URI vazia', () => {
+  it('recusa MONGODB_URI vazia ou que não é do Mongo', () => {
     expect(() => validate({ ...valid, MONGODB_URI: '' })).toThrow(
       /MONGODB_URI deve começar com mongodb/,
     );
-  });
-
-  it('recusa MONGODB_URI que não é do Mongo', () => {
     expect(() =>
       validate({ ...valid, MONGODB_URI: 'https://cluster.mongodb.net' }),
-    ).toThrow(/MONGODB_URI/);
+    ).toThrow(/MONGODB_URI deve começar com mongodb/);
   });
 
   it('recusa segredo do JWT com menos de 32 caracteres', () => {
