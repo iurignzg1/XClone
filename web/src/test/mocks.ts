@@ -1,5 +1,6 @@
 import { GraphQLError } from 'graphql';
 import { useAuthStore, type SessionUser } from '../features/auth/auth.store';
+import { useUiStore } from '../features/ui/ui.store';
 import {
   CreateTweetDocument,
   DeleteTweetDocument,
@@ -14,6 +15,7 @@ import {
   SuggestedUsersDocument,
   SuspendedUsersDocument,
   ToggleLikeDocument,
+  TopTweetsDocument,
   TweetDocument,
   TweetLikesDocument,
   UnreadNotificationsCountDocument,
@@ -64,6 +66,12 @@ export const manyTweets = (count: number) =>
 export const feedMock = (tweets: unknown[], variables: Record<string, unknown> = { limit: 20 }) => ({
   request: { query: FeedDocument, variables },
   result: { data: { feed: tweets } },
+});
+
+// Página inicial dos visitantes: os pios mais curtidos.
+export const topTweetsMock = (tweets: unknown[]) => ({
+  request: { query: TopTweetsDocument, variables: { limit: 20 } },
+  result: { data: { topTweets: tweets } },
 });
 
 export const feedOfflineMock = () => ({
@@ -225,6 +233,7 @@ export function loginAs(role: SessionUser['role'] = 'USER') {
 
 export function logout() {
   useAuthStore.setState({ user: null, accessToken: null, refreshToken: null });
+  useUiStore.setState({ loginPrompt: null });
   localStorage.clear();
 }
 

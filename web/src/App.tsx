@@ -31,18 +31,21 @@ export default function App() {
         </Route>
       </Route>
 
-      <Route element={<ProtectedRoute />}>
-        <Route element={<AppShell />}>
-          <Route path="/home" element={<HomePage />} />
+      <Route element={<AppShell />}>
+        {/* Abertas a visitantes: a home, os pios e os perfis (ler é livre;
+            interagir pede login, e o aviso aparece na própria tela). */}
+        <Route path="/home" element={<HomePage />} />
+        <Route path="/pio/:id" element={<TweetPage />} />
+        <Route path="/tweet/:id" element={<TweetRedirect />} />
+        {/* Só para quem tem conta. */}
+        <Route element={<ProtectedRoute />}>
           <Route path="/pesquisar" element={<SearchPage />} />
           <Route path="/notificacoes" element={<NotificationsPage />} />
-          <Route path="/pio/:id" element={<TweetPage />} />
-          <Route path="/tweet/:id" element={<TweetRedirect />} />
-          <Route path="/:username" element={<ProfilePage />} />
           <Route element={<ProtectedRoute role="ADMIN" />}>
             <Route path="/admin" element={<AdminPage />} />
           </Route>
         </Route>
+        <Route path="/:username" element={<ProfilePage />} />
       </Route>
 
       <Route path="/" element={<Navigate to="/home" replace />} />

@@ -9,6 +9,7 @@ import { DeleteTweetDocument, type TweetCardFragment } from '../../gql/graphql';
 import { attempt } from '../../lib/attempt';
 import { timeAgo } from '../../lib/time';
 import { useAuthStore } from '../auth/auth.store';
+import { useRequireLogin } from '../auth/useRequireLogin';
 import { LikesModal } from './LikesModal';
 import { useToggleLike } from './useToggleLike';
 import styles from './TweetCard.module.css';
@@ -30,6 +31,7 @@ export function TweetCard({
   showReplyContext?: boolean;
 }) {
   const me = useAuthStore((s) => s.user);
+  const requireLogin = useRequireLogin();
   const [showLikes, setShowLikes] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const navigate = useNavigate();
@@ -90,12 +92,16 @@ export function TweetCard({
             className={`${styles.action} ${tweet.likedByMe ? styles.liked : ''}`}
             aria-label={`${tweet.likedByMe ? 'Descurtir' : 'Curtir'} (${tweet.likesCount})`}
             aria-pressed={tweet.likedByMe}
-            onClick={() => void attempt(like.toggle)}
+            onClick={() => requireLogin('curtir este pio') && void attempt(like.toggle)}
           >
             <HeartIcon filled={tweet.likedByMe} />
             <span>{tweet.likesCount}</span>
           </button>
-          <button className={styles.action} onClick={() => setShowLikes(true)} aria-label="Quem curtiu">
+          <button
+            className={styles.action}
+            onClick={() => requireLogin('ver quem curtiu') && setShowLikes(true)}
+            aria-label="Quem curtiu"
+          >
             <UsersIcon />
             <span className={styles.label}>Quem curtiu</span>
           </button>

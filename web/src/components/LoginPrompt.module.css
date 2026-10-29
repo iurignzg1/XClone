@@ -1,0 +1,11 @@
+.backdrop { position: fixed; inset: 0; z-index: 20; display: flex; align-items: center; justify-content: center; padding: 16px; background: rgb(0 0 0 / 0.55); }
+.dialog {
+  width: 100%; max-width: 380px; display: flex; flex-direction: column; gap: 10px; padding: 22px;
+  background: var(--surface); border-radius: var(--radius-lg); box-shadow: 0 8px 32px rgb(0 0 0 / 0.3);
+}
+.dialog h3 { font-size: 1.15rem; }
+.dialog p { margin: 0; }
+.buttons { display: flex; gap: 8px; margin-top: 10px; }
+.buttons a { flex: 1 1 0; text-align: center; text-decoration: none; padding: 8px 16px; }
+.dismiss { align-self: center; border: none; background: transparent; color: var(--muted); padding: 6px 12px; border-radius: var(--radius); }
+.dismiss:hover:not(:disabled) { background: var(--hover); color: var(--ink); border: none; }

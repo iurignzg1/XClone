@@ -1,3 +1,9 @@
 /* Lista colada: os cartões já têm a linha divisória (sem o gap da section). */
 .page { gap: 0; }
 .note { margin: 0; padding: 12px 16px; text-align: center; }
+/* Visitante: no lugar do campo de resposta, um botão que abre o aviso de login. */
+.replyPrompt {
+  display: block; width: 100%; padding: 16px; border: none; border-bottom: 1px solid var(--line); border-radius: 0;
+  background: transparent; color: var(--muted); text-align: left; font-size: 1rem;
+}
+.replyPrompt:hover:not(:disabled) { background: var(--hover); border-bottom: 1px solid var(--line); color: var(--ink); }

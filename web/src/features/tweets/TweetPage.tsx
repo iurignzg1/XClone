@@ -1,5 +1,7 @@
 import { Link, Navigate, useParams } from 'react-router';
 import { ErrorBox } from '../../components/ErrorBox';
+import { useAuthStore } from '../auth/auth.store';
+import { useUiStore } from '../ui/ui.store';
 import { ComposePanel } from './ComposePanel';
 import { TweetCard } from './TweetCard';
 import { TweetSkeletons } from './TweetSkeleton';
@@ -11,6 +13,8 @@ export function TweetPage() {
   // O :id da rota (/pio/:id).
   const { id = '' } = useParams();
   const { tweet, loading, error } = useTweet(id);
+  const loggedIn = useAuthStore((s) => s.user !== null);
+  const askLogin = useUiStore((s) => s.askLogin);
 
   return (
     <section className={styles.page}>
@@ -28,7 +32,13 @@ export function TweetPage() {
             </p>
           )}
           <TweetCard tweet={tweet} featured />
-          <ComposePanel replyTo={tweet.id} />
+          {loggedIn ? (
+            <ComposePanel replyTo={tweet.id} />
+          ) : (
+            <button className={styles.replyPrompt} onClick={() => askLogin('responder')}>
+              Entre para responder
+            </button>
+          )}
           {tweet.replies.length === 0 && <p className={`${shared.muted} ${styles.note}`}>Nenhuma resposta ainda.</p>}
           {/* Aqui todas são respostas ao pio de cima: não precisa repetir "Em resposta a". */}
           {tweet.replies.map((reply) => (

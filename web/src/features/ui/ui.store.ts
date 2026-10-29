@@ -12,6 +12,12 @@ interface UiState {
   composerOpen: boolean;
   openComposer: () => void;
   closeComposer: () => void;
+  // Aviso "entre para continuar", aberto quando um visitante tenta curtir,
+  // seguir etc. Guarda o que ele tentou fazer ("curtir este pio"), ou null
+  // com o aviso fechado.
+  loginPrompt: string | null;
+  askLogin: (reason: string) => void;
+  closeLoginPrompt: () => void;
 }
 
 // Estado só da interface (não vem do servidor, então não é do Apollo).
@@ -23,6 +29,9 @@ export const useUiStore = create<UiState>()(
       composerOpen: false,
       openComposer: () => set({ composerOpen: true }),
       closeComposer: () => set({ composerOpen: false }),
+      loginPrompt: null,
+      askLogin: (reason) => set({ loginPrompt: reason }),
+      closeLoginPrompt: () => set({ loginPrompt: null }),
     }),
     { name: 'pio-ui', partialize: (state) => ({ theme: state.theme }) },
   ),

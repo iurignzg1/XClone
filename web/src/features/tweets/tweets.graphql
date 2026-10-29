@@ -14,6 +14,11 @@ query Feed($limit: Int, $after: ID) {
   feed(limit: $limit, after: $after) { ...TweetCard }
 }
 
+# Página inicial dos visitantes: os pios mais curtidos (aberta sem login).
+query TopTweets($limit: Int) {
+  topTweets(limit: $limit) { ...TweetCard }
+}
+
 mutation CreateTweet($input: CreateTweetInput!) {
   createTweet(input: $input) { ...TweetCard }
 }

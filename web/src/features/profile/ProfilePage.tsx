@@ -7,6 +7,7 @@ import { ErrorBox } from '../../components/ErrorBox';
 import { SuspendUserDocument, UserByUsernameDocument } from '../../gql/graphql';
 import { attempt } from '../../lib/attempt';
 import { useAuthStore } from '../auth/auth.store';
+import { useRequireLogin } from '../auth/useRequireLogin';
 import { TweetSkeletons } from '../tweets/TweetSkeleton';
 import { ReactivateButton } from '../admin/ReactivateButton';
 import { Cover } from './Cover';
@@ -20,6 +21,7 @@ import shared from '../../styles/shared.module.css';
 
 export function ProfilePage() {
   const me = useAuthStore((s) => s.user);
+  const requireLogin = useRequireLogin();
   // O :username da rota (/:username).
   const { username = '' } = useParams();
 
@@ -82,11 +84,11 @@ export function ProfilePage() {
 
           {/* Os números abrem a lista de pessoas. */}
           <div className={styles.stats}>
-            <button className={styles.stat} onClick={() => setOpenList('following')}>
+            <button className={styles.stat} onClick={() => requireLogin('ver quem ele segue') && setOpenList('following')}>
               <span className={styles.statNumber}>{user.followingCount}</span>{' '}
               <span className={styles.statLabel}>seguindo</span>
             </button>
-            <button className={styles.stat} onClick={() => setOpenList('followers')}>
+            <button className={styles.stat} onClick={() => requireLogin('ver os seguidores') && setOpenList('followers')}>
               <span className={styles.statNumber}>{user.followersCount}</span>{' '}
               <span className={styles.statLabel}>seguidores</span>
             </button>

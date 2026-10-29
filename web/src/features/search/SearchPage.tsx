@@ -1,6 +1,6 @@
 import { useQuery } from '@apollo/client/react';
 import { useEffect, useState } from 'react';
-import { Link, useSearchParams } from 'react-router';
+import { Link } from 'react-router';
 import { Avatar } from '../../components/Avatar';
 import { ErrorBox } from '../../components/ErrorBox';
 import { SearchIcon } from '../../components/icons';
@@ -13,22 +13,18 @@ import shared from '../../styles/shared.module.css';
 // requisição a cada tecla.
 const DEBOUNCE_MS = 250;
 
-// Página de pesquisa de pessoas (pelo @ ou pelo nome). O termo fica no endereço
-// (/pesquisar?q=ana): voltar, recarregar ou compartilhar o link mantém a busca.
+// Página de pesquisa de pessoas (pelo @ ou pelo nome). O termo vive só na
+// memória da tela: o endereço fica sempre /pesquisar, sem mudar a cada letra.
+// (Em troca, recarregar ou voltar para a página começa com a busca vazia.)
 export function SearchPage() {
-  const [params, setParams] = useSearchParams();
-  const term = params.get('q')?.trim() ?? '';
-  const [text, setText] = useState(term);
+  // `text` é o que está no campo; `term` é o que vai para a busca, depois da pausa.
+  const [text, setText] = useState('');
+  const [term, setTerm] = useState('');
 
-  // Leva o que foi digitado para o endereço, depois da pausa. `replace` evita
-  // encher o histórico com uma entrada por letra.
   useEffect(() => {
-    const timer = setTimeout(() => {
-      const next = text.trim();
-      if (next !== term) setParams(next ? { q: next } : {}, { replace: true });
-    }, DEBOUNCE_MS);
+    const timer = setTimeout(() => setTerm(text.trim()), DEBOUNCE_MS);
     return () => clearTimeout(timer);
-  }, [text, term, setParams]);
+  }, [text]);
 
   const { data, loading, error } = useQuery(SearchUsersDocument, {
     variables: { query: term },

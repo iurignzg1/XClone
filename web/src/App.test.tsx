@@ -24,6 +24,7 @@ import {
   searchUsersMock,
   searchUsersSlowMock,
   suggestedUsersMock,
+  topTweetsMock,
   suspendedUsersMock,
   toggleLikeErrorMock,
   toggleLikeMock,
@@ -41,23 +42,21 @@ import { renderApp } from './test/renderApp';
 afterEach(logout);
 
 describe('rotas e acesso', () => {
-  it('sem sessão, manda para o login e esconde o resto', () => {
-    renderApp('/home');
+  it.each(['/pesquisar', '/notificacoes', '/admin'])('sem sessão, %s manda para o login', (path) => {
+    renderApp(path);
 
     expect(screen.getByRole('heading', { name: 'Entrar' })).toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'Criar conta' })).toHaveAttribute('href', '/signup');
-    expect(screen.queryByRole('heading', { name: /Feed/ })).not.toBeInTheDocument();
   });
 
   it('depois do login, volta para a página que o visitante queria abrir', async () => {
-    renderApp('/pio/t1', [loginMock('ana@x.com', 'senha-segura'), tweetDetailMock('t1')]);
+    renderApp('/pesquisar', [loginMock('ana@x.com', 'senha-segura')]);
 
     await userEvent.type(screen.getByLabelText('E-mail'), 'ana@x.com');
     await userEvent.type(screen.getByLabelText('Senha'), 'senha-segura');
     await userEvent.click(screen.getByRole('button', { name: 'Entrar' }));
 
-    expect(await screen.findByText('olá mundo')).toBeInTheDocument();
-    expect(screen.getByRole('heading', { name: 'Pio', level: 2 })).toBeInTheDocument();
+    expect(await screen.findByText('Procure pessoas pelo @ ou pelo nome.')).toBeInTheDocument();
   });
 
   it('logado, /login leva para a home', async () => {
@@ -236,12 +235,15 @@ describe('barra lateral: pesquisa e perfil', () => {
     expect(await screen.findByText('oi, sou a Bia')).toBeInTheDocument();
   });
 
-  it('o termo vem do endereço: /pesquisar?q=... já mostra o resultado', async () => {
+  it('sem resultado, avisa quem foi procurado; apagar o campo volta à dica', async () => {
     loginAs();
-    renderApp('/pesquisar?q=zzz', [searchUsersMock('zzz', [])]);
+    renderApp('/pesquisar', [searchUsersMock('zzz', [])]);
 
-    expect(screen.getByRole('searchbox', { name: 'Pesquisar pessoas' })).toHaveValue('zzz');
+    await userEvent.type(screen.getByRole('searchbox', { name: 'Pesquisar pessoas' }), 'zzz');
     expect(await screen.findByText('Ninguém encontrado para “zzz”.')).toBeInTheDocument();
+    await userEvent.clear(screen.getByRole('searchbox', { name: 'Pesquisar pessoas' }));
+
+    expect(await screen.findByText('Procure pessoas pelo @ ou pelo nome.')).toBeInTheDocument();
   });
 });
 
@@ -513,9 +515,10 @@ describe('composer, sugestões, abas e atalhos', () => {
 
   it('a pesquisa mostra o esqueleto de pessoas enquanto busca', async () => {
     loginAs();
-    renderApp('/pesquisar?q=bi', [searchUsersSlowMock('bi', [bia])]);
+    renderApp('/pesquisar', [searchUsersSlowMock('bi', [bia])]);
 
-    expect(screen.getByRole('status', { name: 'Carregando pessoas' })).toBeInTheDocument();
+    await userEvent.type(screen.getByRole('searchbox', { name: 'Pesquisar pessoas' }), 'bi');
+    expect(await screen.findByRole('status', { name: 'Carregando pessoas' })).toBeInTheDocument();
     expect(await screen.findByText('Bia')).toBeInTheDocument();
   });
 });
@@ -611,5 +614,85 @@ describe('notificações', () => {
     renderApp('/notificacoes', [notificationsMock([])]);
 
     expect(await screen.findByText(/Quando alguém curtir, responder ou seguir você/)).toBeInTheDocument();
+  });
+});
+
+describe('visitante (sem conta)', () => {
+  it('a home mostra os pios mais curtidos e o convite; o menu só tem o que ele pode usar', async () => {
+    renderApp('/home', [topTweetsMock([tweet({ likesCount: 9 })])]);
+
+    expect(await screen.findByText('olá mundo')).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Em alta' })).toBeInTheDocument();
+    // Um Entrar e um Criar conta só (os do menu lateral), sem repetir na página.
+    expect(screen.getAllByRole('link', { name: 'Entrar' })).toHaveLength(1);
+    expect(screen.getAllByRole('link', { name: 'Criar conta' })).toHaveLength(1);
+    // Nada de quem tem conta: publicar, pesquisar, notificações, o feed.
+    expect(screen.queryByRole('button', { name: 'Publicar' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: 'Pesquisar' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: /Notificações/ })).not.toBeInTheDocument();
+    expect(screen.queryByRole('textbox')).not.toBeInTheDocument();
+  });
+
+  it('curtir ou ver quem curtiu abre o aviso de login, sem chamar a API; Esc fecha', async () => {
+    // Sem mock das mutations: se alguma fosse chamada, apareceria um erro.
+    renderApp('/home', [topTweetsMock([tweet()])]);
+
+    await userEvent.click(await screen.findByRole('button', { name: 'Curtir (0)' }));
+    const dialog = screen.getByRole('dialog', { name: 'Entre para curtir este pio' });
+    expect(within(dialog).getByRole('link', { name: 'Entrar' })).toHaveAttribute('href', '/login');
+    expect(within(dialog).getByRole('link', { name: 'Criar conta' })).toHaveAttribute('href', '/signup');
+    await userEvent.keyboard('{Escape}');
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+
+    await userEvent.click(screen.getByRole('button', { name: 'Quem curtiu' }));
+    expect(screen.getByRole('dialog', { name: 'Entre para ver quem curtiu' })).toBeInTheDocument();
+    await userEvent.click(screen.getByRole('button', { name: 'Agora não' }));
+
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+  });
+
+  it('entrar pelo aviso leva de volta ao pio onde ele estava, já como quem tem conta', async () => {
+    renderApp('/pio/t1', [
+      tweetDetailMock('t1'),
+      loginMock('ana@x.com', 'senha-segura'),
+      tweetDetailMock('t1'),
+    ]);
+
+    await userEvent.click(await screen.findByRole('button', { name: 'Curtir (0)' }));
+    await userEvent.click(within(screen.getByRole('dialog')).getByRole('link', { name: 'Entrar' }));
+    await userEvent.type(await screen.findByLabelText('E-mail'), 'ana@x.com');
+    await userEvent.type(screen.getByLabelText('Senha'), 'senha-segura');
+    await userEvent.click(screen.getByRole('button', { name: 'Entrar' }));
+
+    expect(await screen.findByRole('textbox', { name: 'Sua resposta' })).toBeInTheDocument();
+    expect(screen.getByText('olá mundo')).toBeInTheDocument();
+  });
+
+  it('no pio, lê as respostas mas não responde: no lugar do composer, um botão que abre o aviso de login', async () => {
+    renderApp('/pio/t1', [tweetDetailMock('t1', [tweet({ id: 't2', content: 'resposta aqui', parentId: 't1' })])]);
+
+    expect(await screen.findByText('resposta aqui')).toBeInTheDocument();
+    expect(screen.queryByRole('textbox')).not.toBeInTheDocument();
+
+    await userEvent.click(screen.getByRole('button', { name: 'Entre para responder' }));
+
+    expect(screen.getByRole('dialog', { name: 'Entre para responder' })).toBeInTheDocument();
+  });
+
+  it('no perfil, vê os pios e as respostas; seguir e as listas pedem login, e não há aba de curtidas', async () => {
+    renderApp('/bia', [profileMock(bia, 'oi, sou a Bia'), userTweetsMock('bia', [tweet({ content: 'um pio da Bia' })])]);
+
+    expect(await screen.findByText('um pio da Bia')).toBeInTheDocument();
+    expect(screen.getAllByRole('tab').map((tab) => tab.textContent)).toEqual(['Pios', 'Respostas']);
+    expect(screen.queryByRole('button', { name: 'Editar perfil' })).not.toBeInTheDocument();
+
+    await userEvent.click(screen.getByRole('button', { name: 'Seguir' }));
+    expect(screen.getByRole('dialog', { name: 'Entre para seguir esta pessoa' })).toBeInTheDocument();
+    await userEvent.keyboard('{Escape}');
+    await userEvent.click(screen.getByRole('button', { name: '3 seguidores' }));
+
+    expect(screen.getByRole('dialog', { name: 'Entre para ver os seguidores' })).toBeInTheDocument();
+    expect(screen.queryByRole('dialog', { name: 'Seguidores' })).not.toBeInTheDocument();
   });
 });

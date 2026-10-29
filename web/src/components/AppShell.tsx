@@ -1,6 +1,6 @@
 import { useQuery } from '@apollo/client/react';
 import type { ReactNode } from 'react';
-import { NavLink, Outlet } from 'react-router';
+import { Link, NavLink, Outlet, useLocation } from 'react-router';
 import { useAuthStore } from '../features/auth/auth.store';
 import { WhoToFollow } from '../features/profile/WhoToFollow';
 import { ComposerModal } from '../features/tweets/ComposerModal';
@@ -9,6 +9,7 @@ import { WIDE_LAYOUT } from '../lib/layout';
 import { useMediaQuery } from '../lib/useMediaQuery';
 import { ThemeToggle } from '../features/ui/ThemeToggle';
 import { AccountMenu } from './AccountMenu';
+import { LoginPrompt } from './LoginPrompt';
 import { UnreadNotificationsCountDocument } from '../gql/graphql';
 import { BellIcon, HomeIcon, SearchIcon, ShieldIcon } from './icons';
 import { Logo } from './Logo';
@@ -49,8 +50,25 @@ function NotificationsItem() {
   );
 }
 
-// Moldura das telas logadas: barra lateral (no celular vira um cabeçalho) e a
-// coluna central com o conteúdo da rota.
+// No lugar da conta e do "Publicar", o visitante vê estes dois botões.
+function GuestActions() {
+  const location = useLocation();
+  const state = { from: location };
+  return (
+    <div className={styles.guestActions}>
+      <Link to="/login" state={state} className={shared.primary}>
+        Entrar
+      </Link>
+      <Link to="/signup" state={state} className={shared.outline}>
+        Criar conta
+      </Link>
+    </div>
+  );
+}
+
+// Moldura das telas do app: barra lateral (no celular vira um cabeçalho) e a
+// coluna central com o conteúdo da rota. Serve a quem tem conta e ao visitante
+// (que lê, mas não publica nem interage: o menu mostra só o que ele pode usar).
 export function AppShell() {
   const user = useAuthStore((s) => s.user);
   const openComposer = useUiStore((s) => s.openComposer);
@@ -67,24 +85,27 @@ export function AppShell() {
         </div>
         <nav className={styles.nav} aria-label="Principal">
           <Item to="/home" icon={<HomeIcon />}>Home</Item>
-          <Item to="/pesquisar" icon={<SearchIcon />}>Pesquisar</Item>
-          <NotificationsItem />
+          {user && <Item to="/pesquisar" icon={<SearchIcon />}>Pesquisar</Item>}
+          {user && <NotificationsItem />}
           {user?.role === 'ADMIN' && <Item to="/admin" icon={<ShieldIcon />}>Admin</Item>}
         </nav>
-        <button className={`${shared.primary} ${styles.publish}`} onClick={openComposer}>
-          Publicar
-        </button>
-        {user && <AccountMenu user={user} />}
+        {user && (
+          <button className={`${shared.primary} ${styles.publish}`} onClick={openComposer}>
+            Publicar
+          </button>
+        )}
+        {user ? <AccountMenu user={user} /> : <GuestActions />}
       </aside>
       <main className={styles.main}>
         <Outlet />
       </main>
-      {wide && (
+      {wide && user && (
         <aside className={styles.extra} aria-label="Sugestões">
           <WhoToFollow />
         </aside>
       )}
-      <ComposerModal />
+      {user && <ComposerModal />}
+      <LoginPrompt />
     </div>
   );
 }

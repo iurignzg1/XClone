@@ -2,6 +2,7 @@ import { useQuery } from '@apollo/client/react';
 import { useId, useRef, useState, type KeyboardEvent } from 'react';
 import { ErrorBox } from '../../components/ErrorBox';
 import { LikedTweetsDocument, UserRepliesDocument, UserTweetsDocument } from '../../gql/graphql';
+import { useAuthStore } from '../auth/auth.store';
 import { TweetCard } from '../tweets/TweetCard';
 import { TweetSkeletons } from '../tweets/TweetSkeleton';
 import styles from './ProfileTabs.module.css';
@@ -15,10 +16,13 @@ const TABS = [
 
 type Tab = (typeof TABS)[number]['id'];
 
-// Abas do perfil. Cada aba tem a sua query, e só a da aba aberta roda (skip
+// Abas do perfil. As curtidas de uma pessoa só aparecem para quem tem conta.
+// Cada aba tem a sua query, e só a da aba aberta roda (skip
 // nas outras); voltar para uma aba já vista usa o que está no cache.
 // Teclado: setas esquerda/direita trocam de aba, como pede o padrão de abas.
 export function ProfileTabs({ username }: { username: string }) {
+  const loggedIn = useAuthStore((s) => s.user !== null);
+  const tabs = loggedIn ? TABS : TABS.filter((item) => item.id !== 'curtidas');
   const [tab, setTab] = useState<Tab>('pios');
   const tabRefs = useRef<(HTMLButtonElement | null)[]>([]);
   const baseId = useId();
@@ -35,15 +39,15 @@ export function ProfileTabs({ username }: { username: string }) {
 
   function onKeyDown(event: KeyboardEvent, index: number) {
     if (event.key !== 'ArrowRight' && event.key !== 'ArrowLeft') return;
-    const next = (index + (event.key === 'ArrowRight' ? 1 : -1) + TABS.length) % TABS.length;
-    setTab(TABS[next].id);
+    const next = (index + (event.key === 'ArrowRight' ? 1 : -1) + tabs.length) % tabs.length;
+    setTab(tabs[next].id);
     tabRefs.current[next]?.focus();
   }
 
   return (
     <>
       <div className={styles.tabs} role="tablist" aria-label="Conteúdo do perfil">
-        {TABS.map((item, index) => (
+        {tabs.map((item, index) => (
           <button
             key={item.id}
             ref={(el) => {

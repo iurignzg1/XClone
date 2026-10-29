@@ -17,6 +17,11 @@
   color: var(--ink); font-size: 1.05rem;
 }
 .item:hover { background: var(--hover); text-decoration: none; }
+/* Visitante: Entrar e Criar conta no lugar da conta, no fim da barra. */
+.guestActions { display: flex; flex-direction: column; gap: 8px; }
+.guestActions a { padding: 10px 16px; text-align: center; text-decoration: none; }
+@media (max-width: 799px) { .guestActions { flex-direction: row; } .guestActions a { flex: 1 1 0; } }
+
 /* Número de notificações novas: pequeno, em tinta, alinhado ao texto. */
 .badge {
   min-width: 20px; padding: 1px 6px; border-radius: 6px; background: var(--ink); color: var(--bg);
