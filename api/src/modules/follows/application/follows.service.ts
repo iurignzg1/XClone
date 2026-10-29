@@ -44,18 +44,21 @@ export class FollowsService {
 
   // Listas de "seguidores" e "seguindo" de um perfil (pelo @), do vínculo mais
   // recente para o mais antigo.
+  // Contas suspensas não aparecem nas listas.
   async getFollowers(username: string, limit: number): Promise<User[]> {
     const user = await this.usersService.getByUsername(username);
-    return this.loadInOrder(
+    const people = await this.loadInOrder(
       await this.followRepository.listFollowerIds(user.id, limit),
     );
+    return people.filter((person) => !person.suspended);
   }
 
   async getFollowing(username: string, limit: number): Promise<User[]> {
     const user = await this.usersService.getByUsername(username);
-    return this.loadInOrder(
+    const people = await this.loadInOrder(
       await this.followRepository.listFollowingIds(user.id, limit),
     );
+    return people.filter((person) => !person.suspended);
   }
 
   // "Quem seguir": as contas mais seguidas que a pessoa ainda não segue (nem

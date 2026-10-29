@@ -8,3 +8,12 @@ export const CurrentUser = createParamDecorator(
     GqlExecutionContext.create(context).getContext<{ req: { user: User } }>()
       .req.user,
 );
+
+// Quem está vendo, em operações abertas a visitantes (@OptionalAuth): o
+// usuário logado, ou undefined para o visitante.
+export const Viewer = createParamDecorator(
+  (_data: unknown, context: ExecutionContext): User | undefined =>
+    GqlExecutionContext.create(context).getContext<{
+      req: { user?: User };
+    }>().req.user,
+);

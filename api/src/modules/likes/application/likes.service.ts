@@ -30,14 +30,17 @@ export class LikesService {
     private readonly events: EventEmitter2,
   ) {}
 
-  // Quem curtiu o tweet, da curtida mais recente para a mais antiga.
+  // Quem curtiu o tweet, da curtida mais recente para a mais antiga (sem as
+  // contas suspensas).
   async getLikers(tweetId: string, limit: number): Promise<User[]> {
     await this.tweetsService.findById(tweetId);
     const userIds = await this.likeRepository.findLikerIds(tweetId, limit);
     const users = await this.usersService.findByIds(userIds);
     // O banco devolve os usuários em qualquer ordem: refaz a ordem das curtidas.
     const byId = new Map(users.map((user) => [user.id, user]));
-    return userIds.flatMap((id) => byId.get(id) ?? []);
+    return userIds
+      .flatMap((id) => byId.get(id) ?? [])
+      .filter((user) => !user.suspended);
   }
 
   // Aba "Curtidas" do perfil: o que a pessoa curtiu, da curtida mais recente

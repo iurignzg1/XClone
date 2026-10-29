@@ -65,6 +65,16 @@ export function suspend(t: TestApp, admin: TestSession, target: TestSession) {
   );
 }
 
+// Apaga todos os dados (os índices ficam). Para testes de consultas globais,
+// como a lista dos mais curtidos, que enxergam os dados de todos os testes do
+// arquivo (o banco é um só por arquivo).
+export async function clearData(t: TestApp): Promise<void> {
+  const collections = await t.db.listCollections();
+  await Promise.all(
+    collections.map(({ name }) => t.db.collection(name).deleteMany({})),
+  );
+}
+
 // Não existe mutation para virar ADMIN (de propósito): preparamos no banco.
 export async function makeAdmin(t: TestApp, who: TestSession): Promise<void> {
   await t.db

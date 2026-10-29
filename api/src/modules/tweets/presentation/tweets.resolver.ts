@@ -11,7 +11,11 @@ import {
 } from '@nestjs/graphql';
 import { UseGuards } from '@nestjs/common';
 import type DataLoader from 'dataloader';
-import { CurrentUser } from '../../../common/decorators/current-user.decorator.js';
+import {
+  CurrentUser,
+  Viewer,
+} from '../../../common/decorators/current-user.decorator.js';
+import { OptionalAuth } from '../../../common/decorators/optional-auth.decorator.js';
 import { RateLimit } from '../../../common/decorators/rate-limit.decorator.js';
 import { UsersService } from '../../users/application/users.service.js';
 import type { User } from '../../users/domain/user.entity.js';
@@ -20,6 +24,7 @@ import { REPLIES_LIMIT, TweetsService } from '../application/tweets.service.js';
 import type { Tweet } from '../domain/tweet.entity.js';
 import { CreateTweetInput } from './dto/create-tweet.input.js';
 import { DeleteTweetInput } from './dto/delete-tweet.input.js';
+import { TopTweetsArgs } from './dto/top-tweets.args.js';
 import { UserTweetsArgs } from './dto/user-tweets.args.js';
 import { TweetOwnerGuard } from './guards/tweet-owner.guard.js';
 import { TweetType } from './types/tweet.type.js';
@@ -57,19 +62,44 @@ export class TweetsResolver {
     return true;
   }
 
-  @Query(() => TweetType)
-  tweet(@Args('id', { type: () => ID }) id: string): Promise<Tweet> {
-    return this.tweetsService.findById(id);
+  // Página inicial dos visitantes: os pios mais curtidos.
+  @OptionalAuth()
+  @Query(() => [TweetType])
+  topTweets(@Args() args: TopTweetsArgs): Promise<Tweet[]> {
+    return this.tweetsService.findMostLiked(args.limit);
   }
 
+  // As leituras abaixo são abertas a visitantes (@OptionalAuth), que não veem o
+  // que contas suspensas escreveram.
+  @OptionalAuth()
+  @Query(() => TweetType)
+  async tweet(
+    @Viewer() viewer: User | undefined,
+    @Args('id', { type: () => ID }) id: string,
+  ): Promise<Tweet> {
+    const tweet = await this.tweetsService.findById(id);
+    if (!viewer) await this.tweetsService.assertAuthorActive(tweet);
+    return tweet;
+  }
+
+  @OptionalAuth()
   @Query(() => [TweetType])
-  userTweets(@Args() args: UserTweetsArgs): Promise<Tweet[]> {
+  async userTweets(
+    @Viewer() viewer: User | undefined,
+    @Args() args: UserTweetsArgs,
+  ): Promise<Tweet[]> {
+    await this.usersService.getByUsernameFor(viewer, args.username);
     return this.tweetsService.findByUsername(args.username, args.limit);
   }
 
   // Aba "Respostas" do perfil.
+  @OptionalAuth()
   @Query(() => [TweetType])
-  userReplies(@Args() args: UserTweetsArgs): Promise<Tweet[]> {
+  async userReplies(
+    @Viewer() viewer: User | undefined,
+    @Args() args: UserTweetsArgs,
+  ): Promise<Tweet[]> {
+    await this.usersService.getByUsernameFor(viewer, args.username);
     return this.tweetsService.findRepliesByUsername(args.username, args.limit);
   }
 
@@ -78,8 +108,14 @@ export class TweetsResolver {
   @ResolveField(() => [TweetType], {
     complexity: ({ childComplexity }) => 1 + childComplexity * REPLIES_LIMIT,
   })
-  replies(@Parent() tweet: Tweet): Promise<Tweet[]> {
-    return this.tweetsService.findReplies(tweet.id);
+  async replies(
+    @Parent() tweet: Tweet,
+    @Viewer() viewer: User | undefined,
+  ): Promise<Tweet[]> {
+    const replies = await this.tweetsService.findReplies(tweet.id);
+    return viewer
+      ? replies
+      : this.tweetsService.withoutSuspendedAuthors(replies);
   }
 
   // Campo calculado: quantas respostas o tweet tem. O DataLoader conta as de

@@ -88,6 +88,23 @@ export class MongoTweetRepository extends TweetRepository {
     return docs.map((doc) => this.toDomain(doc));
   }
 
+  async findMostLiked(
+    limit: number,
+    excludeAuthorIds: string[],
+  ): Promise<Tweet[]> {
+    const docs = await this.tweetModel
+      .find({
+        parentId: null,
+        authorId: {
+          $nin: excludeAuthorIds.filter((id) => isValidObjectId(id)),
+        },
+      })
+      // O _id desempata: nasce com a data de criação e nunca se repete.
+      .sort({ likesCount: -1, _id: -1 })
+      .limit(limit);
+    return docs.map((doc) => this.toDomain(doc));
+  }
+
   async deleteById(id: string): Promise<boolean> {
     if (!isValidObjectId(id)) return false;
     const result = await this.tweetModel.deleteOne({ _id: id });

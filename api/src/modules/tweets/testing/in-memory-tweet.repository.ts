@@ -71,6 +71,18 @@ export class InMemoryTweetRepository extends TweetRepository {
     );
   }
 
+  findMostLiked(limit: number, excludeAuthorIds: string[]): Promise<Tweet[]> {
+    return Promise.resolve(
+      this.tweets
+        .filter(
+          (t) => t.parentId === null && !excludeAuthorIds.includes(t.authorId),
+        )
+        .reverse()
+        .sort((a, b) => b.likesCount - a.likesCount)
+        .slice(0, limit),
+    );
+  }
+
   findByIds(ids: string[]): Promise<Tweet[]> {
     return Promise.resolve(this.tweets.filter((t) => ids.includes(t.id)));
   }

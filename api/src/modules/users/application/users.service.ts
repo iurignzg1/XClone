@@ -35,6 +35,20 @@ export class UsersService {
     return user;
   }
 
+  // Como o getByUsername, mas visitantes (sem login) não veem contas
+  // suspensas: o perfil some, como se não existisse. Quem está logado vê (o
+  // ADMIN precisa dele para reativar a conta).
+  async getByUsernameFor(
+    viewer: User | undefined,
+    username: string,
+  ): Promise<User> {
+    const user = await this.getByUsername(username);
+    if (!viewer && user.suspended) {
+      throw new NotFoundException('Usuário não encontrado');
+    }
+    return user;
+  }
+
   // Cada pessoa só altera o próprio perfil: o id vem do usuário logado, nunca do
   // cliente, então não dá para editar o perfil de outra conta.
   async updateProfile(userId: string, changes: ProfileChanges): Promise<User> {

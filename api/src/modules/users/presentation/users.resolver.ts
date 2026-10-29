@@ -1,5 +1,9 @@
 import { Args, Mutation, Query, Resolver } from '@nestjs/graphql';
-import { CurrentUser } from '../../../common/decorators/current-user.decorator.js';
+import {
+  CurrentUser,
+  Viewer,
+} from '../../../common/decorators/current-user.decorator.js';
+import { OptionalAuth } from '../../../common/decorators/optional-auth.decorator.js';
 import { Roles } from '../../../common/decorators/roles.decorator.js';
 import { UserRole } from '../domain/user-role.enum.js';
 import type { User } from '../domain/user.entity.js';
@@ -28,9 +32,14 @@ export class UsersResolver {
     return this.usersService.search(args.query, args.limit);
   }
 
+  // Aberta a visitantes: o perfil público.
+  @OptionalAuth()
   @Query(() => UserType)
-  userByUsername(@Args() args: UserByUsernameArgs): Promise<User> {
-    return this.usersService.getByUsername(args.username);
+  userByUsername(
+    @Viewer() viewer: User | undefined,
+    @Args() args: UserByUsernameArgs,
+  ): Promise<User> {
+    return this.usersService.getByUsernameFor(viewer, args.username);
   }
 
   // Muda o nome de exibição, a bio e a capa de quem está logado (e só dele).

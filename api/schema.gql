@@ -86,6 +86,7 @@ type Query {
   searchUsers(limit: Int! = 10, query: String!): [User!]!
   suggestedUsers(limit: Int! = 3): [User!]!
   suspendedUsers(limit: Int! = 50): [User!]!
+  topTweets(limit: Int! = 20): [Tweet!]!
   tweet(id: ID!): Tweet!
   tweetLikes(limit: Int! = 50, tweetId: ID!): [User!]!
   unreadNotificationsCount: Int!

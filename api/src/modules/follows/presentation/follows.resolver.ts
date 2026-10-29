@@ -9,7 +9,10 @@ import {
   Resolver,
 } from '@nestjs/graphql';
 import type DataLoader from 'dataloader';
-import { CurrentUser } from '../../../common/decorators/current-user.decorator.js';
+import {
+  CurrentUser,
+  Viewer,
+} from '../../../common/decorators/current-user.decorator.js';
 import type { User } from '../../users/domain/user.entity.js';
 import { UserType } from '../../users/presentation/types/user.type.js';
 import { FollowsService } from '../application/follows.service.js';
@@ -30,13 +33,16 @@ interface FollowsGqlContext {
 export class FollowsResolver {
   constructor(private readonly followsService: FollowsService) {}
 
-  // O usuário logado segue esta pessoa? (No próprio perfil, sempre false.)
+  // O usuário logado segue esta pessoa? (No próprio perfil e para visitante,
+  // sempre false.)
   @ResolveField(() => Boolean)
   followedByMe(
     @Parent() user: User,
-    @CurrentUser() viewer: User,
+    @Viewer() viewer: User | undefined,
     @Context() context: FollowsGqlContext,
   ): Promise<boolean> {
+    // Visitante não segue ninguém.
+    if (!viewer) return Promise.resolve(false);
     context.followedByMeLoader ??= this.followsService.createFollowedByMeLoader(
       viewer.id,
     );

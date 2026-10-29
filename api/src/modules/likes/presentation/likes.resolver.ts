@@ -8,7 +8,10 @@ import {
   Resolver,
 } from '@nestjs/graphql';
 import type DataLoader from 'dataloader';
-import { CurrentUser } from '../../../common/decorators/current-user.decorator.js';
+import {
+  CurrentUser,
+  Viewer,
+} from '../../../common/decorators/current-user.decorator.js';
 import { RateLimit } from '../../../common/decorators/rate-limit.decorator.js';
 import type { Tweet } from '../../tweets/domain/tweet.entity.js';
 import { TweetType } from '../../tweets/presentation/types/tweet.type.js';
@@ -32,15 +35,18 @@ interface LikesGqlContext {
 export class LikesResolver {
   constructor(private readonly likesService: LikesService) {}
 
-  // Campo calculado do Tweet: o usuário logado curtiu este tweet?
+  // Campo calculado do Tweet: o usuário logado curtiu este tweet? (Para
+  // visitante, sempre false.)
   @ResolveField(() => Boolean)
   likedByMe(
     @Parent() tweet: Tweet,
-    @CurrentUser() user: User,
+    @Viewer() viewer: User | undefined,
     @Context() context: LikesGqlContext,
   ): Promise<boolean> {
+    // Visitante não curtiu nada.
+    if (!viewer) return Promise.resolve(false);
     context.likedByMeLoader ??= this.likesService.createLikedByMeLoader(
-      user.id,
+      viewer.id,
     );
     return context.likedByMeLoader.load(tweet.id);
   }

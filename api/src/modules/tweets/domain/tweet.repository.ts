@@ -27,6 +27,12 @@ export abstract class TweetRepository {
     authorId: string,
     limit: number,
   ): Promise<Tweet[]>;
+  // Os tweets de topo mais curtidos (empate: o mais novo primeiro), sem os de
+  // `excludeAuthorIds`. Alimenta a página inicial dos visitantes.
+  abstract findMostLiked(
+    limit: number,
+    excludeAuthorIds: string[],
+  ): Promise<Tweet[]>;
   // Vários tweets de uma vez, em qualquer ordem (quem chama reordena).
   abstract findByIds(ids: string[]): Promise<Tweet[]>;
 }

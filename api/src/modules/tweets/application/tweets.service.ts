@@ -15,6 +15,9 @@ import { TweetRepository } from '../domain/tweet.repository.js';
 
 export const REPLIES_LIMIT = 50;
 
+// Quantas contas suspensas o service procura para tirá-las da página pública.
+const SUSPENDED_LOOKUP_LIMIT = 1000;
+
 export interface CreateTweetData {
   authorId: string;
   content: string;
@@ -55,6 +58,37 @@ export class TweetsService {
       throw new NotFoundException('Pio não encontrado');
     }
     return tweet;
+  }
+
+  // Página inicial dos visitantes: os pios mais curtidos, sem os de contas
+  // suspensas.
+  async findMostLiked(limit: number): Promise<Tweet[]> {
+    const suspended = await this.usersService.listSuspended(
+      SUSPENDED_LOOKUP_LIMIT,
+    );
+    return this.tweetRepository.findMostLiked(
+      limit,
+      suspended.map((user) => user.id),
+    );
+  }
+
+  // Visitantes não veem o que contas suspensas escreveram: o pio some, como se
+  // não existisse.
+  async assertAuthorActive(tweet: Tweet): Promise<void> {
+    const author = await this.usersService.findById(tweet.authorId);
+    if (!author || author.suspended) {
+      throw new NotFoundException('Pio não encontrado');
+    }
+  }
+
+  async withoutSuspendedAuthors(tweets: Tweet[]): Promise<Tweet[]> {
+    const authors = await this.usersService.findByIds([
+      ...new Set(tweets.map((tweet) => tweet.authorId)),
+    ]);
+    const active = new Set(
+      authors.filter((author) => !author.suspended).map((author) => author.id),
+    );
+    return tweets.filter((tweet) => active.has(tweet.authorId));
   }
 
   // Aba "Tweets" do perfil: só tweets de topo do usuário, do mais novo para o

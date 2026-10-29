@@ -34,3 +34,6 @@ export const TweetSchema = SchemaFactory.createForClass(TweetModel);
 TweetSchema.index({ authorId: 1, createdAt: -1 });
 // Respostas de um tweet, já na ordem em que são listadas.
 TweetSchema.index({ parentId: 1, createdAt: 1 });
+// Os mais curtidos (página inicial dos visitantes): só tweets de topo, pelo
+// contador de curtidas.
+TweetSchema.index({ parentId: 1, likesCount: -1, _id: -1 });
