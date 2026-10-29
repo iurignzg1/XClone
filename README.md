@@ -1,6 +1,6 @@
 # Pio
 
-Um clone do X (antigo Twitter): publicar pios, responder, curtir, seguir pessoas, ver um feed com quem você segue e receber notificações. Tem também papéis de moderação (MODERATOR e ADMIN).
+Um clone do X (antigo Twitter): publicar pios, responder, curtir, seguir pessoas, ver um feed com quem você segue e receber notificações. Quem não tem conta (visitante) lê a página inicial, os pios e os perfis. Tem também papéis de moderação (MODERATOR e ADMIN).
 
 O repositório tem duas partes:
 
@@ -85,6 +85,7 @@ O que os e2e cobrem:
 - **Autenticação:** cadastro, login, senha errada, renovação de sessão (inclusive o reuso de um refresh token roubado), logout, conta suspensa e o rate limit do login.
 - **Curtidas:** curtir e descurtir, contagem por pessoa, cliques simultâneos, pio inexistente e o que acontece ao apagar o pio.
 - **Feed e respostas:** seguir alguém muda o feed, as respostas ficam fora dele, a paginação pelo cursor e as respostas no pio e na aba do perfil.
+- **Visitante:** a página inicial com os pios mais curtidos, a leitura de pios e perfis sem login, contas suspensas fora da vista pública e das listas, e tudo o que exige login barrado (inclusive com token inválido).
 - **Busca:** pelo começo do @ ou parte do nome, sem contas suspensas, com o termo tratado como texto (e não como expressão regular).
 - **Notificações:** agrupamento das curtidas, ordem, nada para si mesmo, desfazer sem spam, marcar como lidas e pio apagado.
 - **Proteções:** cabeçalhos do helmet, limite de complexidade, e a API em modo produção sem introspecção nem GraphiQL.
@@ -131,6 +132,14 @@ Sobre a sessão:
 - **Refresh token:** é um valor aleatório que vale 7 dias e é guardado no banco só como hash. Uma sessão dura no máximo 30 dias desde o login.
 - **Rotação:** a cada renovação, o refresh token antigo morre.
 - **Reuso:** se um token já usado aparecer de novo, a API trata como roubo e encerra todas as sessões da conta.
+
+#### Visitantes (sem login)
+
+Por padrão, tudo exige login. As leituras públicas ganham `@OptionalAuth()`: sem token, passam como visitante; com token, o token é conferido como sempre, então um token vencido continua dando `UNAUTHENTICATED` (é o que faz o front renovar a sessão). São abertas: `topTweets` (os pios mais curtidos, a página inicial), `tweet`, `userTweets`, `userReplies` e `userByUsername`.
+
+- **O que visitante não faz:** publicar, curtir, seguir, ver notificações, pesquisar, ver as listas de seguidores e de quem curtiu, e as curtidas de um perfil (como no X, elas são privadas).
+- **Contas suspensas:** para o visitante, o perfil, os pios e as respostas delas somem (`NOT_FOUND`). Quem está logado continua vendo, porque o ADMIN precisa do perfil para reativar. As listas de seguidores, seguindo e de quem curtiu nunca mostram contas suspensas.
+- **No front:** a home, o pio e o perfil abrem sem login. Curtir, seguir e ver listas abrem um aviso "Entre para...", e depois de entrar a pessoa volta para onde estava.
 
 #### Proteções
 
